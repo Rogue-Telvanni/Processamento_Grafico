@@ -13,7 +13,7 @@
                 "-I${workspaceFolder}/dependencies/glm", //GLM
                 "-I${workspaceFolder}/Common/include", //Common
                 //source
-                "${workspaceFolder}/Aula_1_setup/*.cpp",
+                "${workspaceFolder}/Semana_2_Camera/*.cpp",
                 //extra
                 "${workspaceFolder}/Common/src/*.cpp",
                 "${workspaceFolder}/dependencies/GLAD/src/*.c",
