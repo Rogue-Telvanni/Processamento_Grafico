@@ -13,8 +13,8 @@
                 "-I${workspaceFolder}/dependencies/glm", //GLM
                 "-I${workspaceFolder}/Common/include", //Common
                 //source
-                //"${workspaceFolder}/Semana_2_Camera/*.cpp",
-                "${workspaceFolder}/Ray_2_Weeks/*.cpp",
+                "${workspaceFolder}/Semana_6_ObjParser/*.cpp",
+                //"${workspaceFolder}/Ray_2_Weeks/*.cpp",
                 //extra
                 "${workspaceFolder}/Common/src/*.cpp",
                 "${workspaceFolder}/dependencies/GLAD/src/*.c",
