@@ -13,7 +13,7 @@
                 "-I${workspaceFolder}/dependencies/glm", //GLM
                 "-I${workspaceFolder}/Common/include", //Common
                 //source
-                "${workspaceFolder}/Semana_6_ObjParser/*.cpp",
+                "${workspaceFolder}/Semana_6_Iluminacao/*.cpp",
                 //"${workspaceFolder}/Ray_2_Weeks/*.cpp",
                 //extra
                 "${workspaceFolder}/Common/src/*.cpp",
