@@ -1,83 +1,46 @@
 #include "SceneManager.h"
 
-//C++
-#include <iostream>
-#include <string>
-#include <assert.h>
-#include <vector>
-#include <fstream>
-#include <sstream>
+GLuint WIDTH, HEIGHT;
 
-using namespace std;
-
-// GLAD
-#include <glad/glad.h>
-
-// GLFW
-#include <GLFW/glfw3.h>
-
-//GLM
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-//Shader
-#include "Shader.h"
-#include "Camera.h"
-
-
-
-// Protótipo da função de callback de teclado
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
-void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void addShader(string vFilename, string fFilename);
-void processInput(GLFWwindow *window);
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-
-// Protótipos das funções
-int loadSimpleOBJ(string filePath, int &nVertices);
-void loadObjs();
-
-// Dimensões da janela (pode ser alterado em tempo de execução)
-const GLuint WIDTH = 1000, HEIGHT = 1000;
-vector <Shader*> shaders;
-
-bool rotateX=false, rotateY=false, rotateZ=false;
+bool rotateX = false, rotateY = false, rotateZ = false;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-float lastX = WIDTH/2, lastY = HEIGHT/2;
 bool firstMouse = true;
-int selected_obj = 0;
+float lastX = 0, lastY = 0;
 
 // timing
-float deltaTime = 0.0f;	// time between current frame and last frame
+float deltaTime = 0.0f; // time between current frame and last frame
 float lastFrame = 0.0f;
 
+//object to render
+static int selected_obj = 0;
 
 
-//vector <Object> objects;
-
-
-// Função MAIN
-int maidn()
+SceneManager::SceneManager()
 {
-	SceneManager* scene = new SceneManager;
-	scene->initialize(WIDTH, HEIGHT);
-	scene->run();
+}
 
-	scene->finish();
+SceneManager::~SceneManager()
+{
+}
 
-	return 0;
+void SceneManager::initialize(GLuint w, GLuint h)
+{
+	WIDTH = w;
+	HEIGHT = h;
 
+	// GLFW - GLEW - OPENGL general setup -- TODO: config file
+	initializeGraphics();
+}
 
-
+void SceneManager::initializeGraphics()
+{
 	// Inicialização da GLFW
 	glfwInit();
 
 	// Criação da janela GLFW
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Camera", nullptr, nullptr);
+	this->window = glfwCreateWindow(WIDTH, HEIGHT, "Camera", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -98,13 +61,16 @@ int maidn()
 	cout << "Renderer: " << renderer << endl;
 	cout << "OpenGL version supported " << version << endl;
 
-	// Definindo as dimensões da viewport com as mesmas dimensões da janela da aplicação
-	int width, height;
-	glfwGetFramebufferSize(window, &width, &height);
-	glViewport(0, 0, width, height);
-
 	// Compilando e buildando o programa de shader
 	addShader("Shaders/phong.vs", "Shaders/phong.fs");
+	
+	setupScene();
+}
+
+void SceneManager::setupScene()
+{
+	glEnable(GL_DEPTH_TEST);
+
 	// Gerando um buffer simples, com a geometria de um triângulo
 	Shader shader = *shaders[0];
 	loadObjs();
@@ -121,143 +87,157 @@ int maidn()
 	//Propriedades da fonte de luz
 	shader.setVec3("lightPos",-2.0, 10.0, 3.0);
 	shader.setVec3("lightColor",1.0, 1.0, 1.0);
+	this->model = glm::mat4(1); //matriz identidade;
 
+	// Definindo as dimensões da viewport com as mesmas dimensões da janela da aplicação
+	int width, height;
+	glfwGetFramebufferSize(this->window, &width, &height);
+	glViewport(0, 0, width, height);
+}
 
-	glm::mat4 model = glm::mat4(1); //matriz identidade;
-	//model = glm::rotate(model, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glEnable(GL_DEPTH_TEST);
+void SceneManager::render()
+{
+	// Checa se houveram eventos de input (key pressed, mouse moved etc.) e chama as funções de callback correspondentes
+	// Limpa o buffer de cor
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // cor de fundo
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	glLineWidth(10);
+	Shader shader = *shaders[0];
 
-	// Loop da aplicação - "game loop"
+	// matrix de projeção
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+	shader.setMat4("projection", glm::value_ptr(projection));
+
+	Object obj = objects[selected_obj];
+	obj.model = glm::mat4(1);
+	if (rotateX)
+	{
+		obj.model = glm::rotate(model, lastFrame, glm::vec3(1.0f, 0.0f, 0.0f));
+	}
+	else if (rotateY)
+	{
+		obj.model = glm::rotate(model, lastFrame, glm::vec3(0.0f, 1.0f, 0.0f));
+	}
+	else if (rotateZ)
+	{
+		obj.model = glm::rotate(model, lastFrame, glm::vec3(0.0f, 0.0f, 1.0f));
+	}
+
+	shader.setMat4("model", glm::value_ptr(obj.model));
+
+	// propriedades da camera
+	//  Matrix de view
+	glm::mat4 view = camera.GetViewMatrix();
+	shader.setMat4("view", glm::value_ptr(view));
+
+	// Chamada de desenho - drawcall
+	glBindVertexArray(obj.VAO);
+	glDrawArrays(GL_TRIANGLES, 0, obj.nVertices);
+}
+
+void SceneManager::update()
+{
+	return;
+}
+
+void SceneManager::finish()
+{
+	// Pede pra OpenGL desalocar os buffers
+	glDeleteVertexArrays(1, &objects[selected_obj].VAO);
+	// Terminate GLFW, clearing any resources allocated by GLFW.
+	glfwTerminate();
+}
+
+void SceneManager::run()
+{
+	// GAME LOOP
 	while (!glfwWindowShouldClose(window))
 	{
-		// Checa se houveram eventos de input (key pressed, mouse moved etc.) e chama as funções de callback correspondentes
+
+		// Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
 		glfwPollEvents();
-
-		// Limpa o buffer de cor
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f); //cor de fundo
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glLineWidth(10);
-		glPointSize(20);
-
 		float angle = (GLfloat)glfwGetTime();
 		deltaTime = angle - lastFrame;
 		lastFrame = angle;
 
-		// input
-        // -----
-        processInput(window);
+		// Update method(s)
+		update();
 
-		// matrix de projeção
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
-		shader.setMat4("projection", glm::value_ptr(projection));
+		// Render scene
+		render();
 
-		// Object obj = objects[selected_obj];
-		// obj.model = glm::mat4(1); 
-		// if (rotateX)
-		// {
-		// 	obj.model = glm::rotate(model, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-		// }
-		// else if (rotateY)
-		// {
-		// 	obj.model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-		// }
-		// else if (rotateZ)
-		// {
-		// 	obj.model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
-		// }
-
-		// shader.setMat4("model", glm::value_ptr(obj.model));
-
-		// //propriedades da camera
-		// // Matrix de view
-		// glm::mat4 view = camera.GetViewMatrix();
-		// shader.setMat4("view", glm::value_ptr(view));
-		
-		// // Chamada de desenho - drawcall
-		// glBindVertexArray(obj.VAO);
-		// glDrawArrays(GL_TRIANGLES, 0, obj.nVertices);
-
-		
-		// Troca os buffers da tela
+		// Swap the screen buffers
 		glfwSwapBuffers(window);
 	}
-	// Pede pra OpenGL desalocar os buffers
-	//glDeleteVertexArrays(1, &objects[selected_obj].VAO);
-	// Finaliza a execução da GLFW, limpando os recursos alocados por ela
-	glfwTerminate();
-	return 0;
 }
 
-// Função de callback de teclado - só pode ter uma instância (deve ser estática se
-// estiver dentro de uma classe) - É chamada sempre que uma tecla for pressionada
-// ou solta via GLFW
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
-{
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GL_TRUE);
-
-	if (key == GLFW_KEY_X && action == GLFW_PRESS)
-	{
-		rotateX = true;
-		rotateY = false;
-		rotateZ = false;
-	}
-
-	if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-	{
-		rotateX = false;
-		rotateY = true;
-		rotateZ = false;
-	}
-
-	if (key == GLFW_KEY_Z && action == GLFW_PRESS)
-	{
-		rotateX = false;
-		rotateY = false;
-		rotateZ = true;
-	}
-
-}
-
-void addShader(string vFilename, string fFilename)
+void SceneManager::addShader(string vFilename, string fFilename)
 {
 	Shader *shader = new Shader(vFilename.c_str(), fFilename.c_str());
 	shaders.push_back(shader);
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+// Função de callback de teclado - só pode ter uma instância (deve ser estática se
+// estiver dentro de uma classe) - É chamada sempre que uma tecla for pressionada
+// ou solta via GLFW
+void SceneManager::key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
+{
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, GL_TRUE);
+
+	if(action == GLFW_PRESS)
+	{
+		if (key == GLFW_KEY_X)
+		{
+			rotateX = true;
+			rotateY = false;
+			rotateZ = false;
+		}
+
+		if (key == GLFW_KEY_Y)
+		{
+			rotateX = false;
+			rotateY = true;
+			rotateZ = false;
+		}
+
+		if (key == GLFW_KEY_Z)
+		{
+			rotateX = false;
+			rotateY = false;
+			rotateZ = true;
+		}
+
+		// object selection, only 3 obj for now
+		if (key == GLFW_KEY_1)
+			selected_obj = 0;
+		if (key == GLFW_KEY_2)
+			selected_obj = 1;
+		if (key == GLFW_KEY_3)
+			selected_obj = 2;
+		if (key == GLFW_KEY_4)
+			selected_obj = 3;
+
+		if (key == GLFW_KEY_W)
+			camera.ProcessKeyboard(FORWARD, deltaTime);
+		if (key == GLFW_KEY_S)
+			camera.ProcessKeyboard(BACKWARD, deltaTime);
+		if (key == GLFW_KEY_A)
+			camera.ProcessKeyboard(LEFT, deltaTime);
+		if (key == GLFW_KEY_D)
+			camera.ProcessKeyboard(RIGHT, deltaTime);
+	}
+}
+
+void SceneManager::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     // make sure the viewport matches the new window dimensions; note that width and 
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow *window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.ProcessKeyboard(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.ProcessKeyboard(BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.ProcessKeyboard(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.ProcessKeyboard(RIGHT, deltaTime);
-
-	//object selection, only 3 obj for now
-    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS)
-		selected_obj = 0;
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		selected_obj = 1;
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		selected_obj = 2;
-}
-
-void mouse_callback(GLFWwindow *window, double xposIn, double yposIn)
+void SceneManager::mouse_callback(GLFWwindow *window, double xposIn, double yposIn)
 {
 	float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
@@ -278,31 +258,38 @@ void mouse_callback(GLFWwindow *window, double xposIn, double yposIn)
     camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void SceneManager::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
-void loadObjs()
+// special function for object loading 
+
+void SceneManager::loadObjs()
 {
-	// //cube
-	// Object c_obj;
-	// c_obj.VAO = loadSimpleOBJ("cube.obj",c_obj.nVertices);
-	// objects.push_back(c_obj);
-	// cout << "load cube"<< endl;
+	//cube
+	Object c_obj;
+	c_obj.VAO = loadSimpleOBJ("cube.obj",c_obj.nVertices);
+	objects.push_back(c_obj);
+	cout << "load cube"<< endl;
 
-	// Object su_obj;
-	// su_obj.VAO = loadSimpleOBJ("Suzanne.obj",su_obj.nVertices);
-	// objects.push_back(su_obj);
-	// cout << "load suzanne"<< endl;
+	Object su_obj;
+	su_obj.VAO = loadSimpleOBJ("Suzanne.obj",su_obj.nVertices);
+	objects.push_back(su_obj);
+	cout << "load suzanne"<< endl;
 
-	// Object na_obj;
-	// na_obj.VAO = loadSimpleOBJ("nave.obj",na_obj.nVertices);
-	//objects.push_back(na_obj);
+	Object na_obj;
+	na_obj.VAO = loadSimpleOBJ("nave.obj",na_obj.nVertices);
+	objects.push_back(na_obj);
+	cout << "load nave"<< endl;
 
+	Object car_obj;
+	na_obj.VAO = loadSimpleOBJ("car.obj",na_obj.nVertices);
+	objects.push_back(na_obj);
+	cout << "load car"<< endl;
 }
 
-int loadSimpleOBJ(string filePath, int &nVertices)
+int SceneManager::loadSimpleOBJ(string filePath, int &nVertices)
 {
 	vector <glm::vec3> vertices;
 	vector <glm::vec2> texCoords;
