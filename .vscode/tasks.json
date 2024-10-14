@@ -18,6 +18,7 @@
                 //extra
                 "${workspaceFolder}/Common/src/*.cpp",
                 "${workspaceFolder}/dependencies/GLAD/src/*.c",
+                "${workspaceFolder}/dependencies/Assimp/lib/libassimp.so",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
                 "-lGL",

@@ -85,7 +85,7 @@ void SceneManager::setupScene()
 	shader.setFloat("q", 10.0);
 
 	//Propriedades da fonte de luz
-	shader.setVec3("lightPos",-2.0, 10.0, 3.0);
+	shader.setVec3("lightPos",-2.0, 10.0, 3.0); 
 	shader.setVec3("lightColor",1.0, 1.0, 1.0);
 	this->model = glm::mat4(1); //matriz identidade;
 
