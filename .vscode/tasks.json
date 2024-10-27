@@ -9,21 +9,25 @@
                 "-g",
                 // Aqui você inclui os caminhos para os diretórios que contém os cabeçalhos das funções
                 "-I${workspaceFolder}/dependencies/GLAD/include", //GLAD
+                "-I${workspaceFolder}/dependencies/stb_image",
+                "-I${workspaceFolder}/dependencies/Assimp/include",
                 "-I${workspaceFolder}/dependencies/GLFW3/include/GLFW", //GLFW
                 "-I${workspaceFolder}/dependencies/glm", //GLM
                 "-I${workspaceFolder}/Common/include", //Common
+                //"-L${workspaceFolder}/dependencies/Assimp/lib",
                 //source
-                "${workspaceFolder}/Semana_6_Iluminacao/*.cpp",
+                "${workspaceFolder}/Semana_7/*.cpp",
                 //"${workspaceFolder}/Ray_2_Weeks/*.cpp",
                 //extra
                 "${workspaceFolder}/Common/src/*.cpp",
                 "${workspaceFolder}/dependencies/GLAD/src/*.c",
-                "${workspaceFolder}/dependencies/Assimp/lib/libassimp.so",
+                "${workspaceFolder}/dependencies/stb_image/*.cpp",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
                 "-lGL",
                 "-lglfw",
-                "-lX11"
+                "-lX11",
+                "-lassimp"
             ],
             "options": {
                 "cwd": "${fileDirname}"
