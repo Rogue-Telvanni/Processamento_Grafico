@@ -40,11 +40,12 @@ public:
     void loadObjs();
     //GLFW callbacks
 	static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
+	static void processInput(GLFWwindow *window);
 	static void mouse_callback(GLFWwindow *window, double xposIn, double yposIn);
 	static void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 	static void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
-	void update();
+	void update(GLFWwindow *window);
 	void render();
 	void run();
 	void finish();
@@ -67,6 +68,5 @@ private:
 	glm::mat4 view;
 
     //array de objetos para renderizar
-    vector <Object> objects;
 	vector <Model> models;
 };
