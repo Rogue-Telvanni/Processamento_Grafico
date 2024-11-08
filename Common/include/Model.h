@@ -25,7 +25,8 @@ class Model
 public:
     // model data 
     vector<Texture> textures_loaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
-    vector<Mesh>    meshes;
+    vector<Mesh> meshes;
+    vector<Material> materials;
     std::string directory;
     bool gammaCorrection;
 
@@ -39,7 +40,23 @@ public:
     void Draw(Shader &shader)
     {
         for(unsigned int i = 0; i < meshes.size(); i++)
-            meshes[i].Draw(shader);
+        {
+            Mesh mesh = meshes[i];
+            const Material& material = materials[mesh.materialIndex];
+
+            shader.Use();
+            if(mesh.textures.size() > 0)
+                shader.setBool("useColor", false);
+            else
+                shader.setBool("useColor", true);
+
+            shader.setVec3("color", 0.f, 0.f, 1.f);
+            shader.setVec3("material.ambient", material.Ambient.r, material.Ambient.g, material.Ambient.b);
+            shader.setVec3("material.diffuse", material.Diffuse.r, material.Diffuse.g, material.Diffuse.b);
+            shader.setVec3("material.specular", material.Specular.r, material.Specular.g, material.Specular.b);
+            shader.setFloat("material.shininess", material.Shininess);
+            mesh.Draw(shader);
+        }
     }
     
 private:
@@ -60,6 +77,12 @@ private:
 
         // process ASSIMP's root node recursively
         processNode(scene->mRootNode, scene);
+
+        for(size_t i = 0; i < scene->mNumMaterials; i++)
+        {
+            std::cout << "lendo material" << endl;
+            materials.push_back(loadMaterial(scene->mMaterials[i]));
+        }
     }
 
     // processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
@@ -112,8 +135,8 @@ private:
                 glm::vec2 vec;
                 // a vertex can contain up to 8 different texture coordinates. We thus make the assumption that we won't 
                 // use models where a vertex can have multiple texture coordinates so we always take the first set (0).
-                vec.x = mesh->mTextureCoords[0][i].x; 
-                vec.y = mesh->mTextureCoords[0][i].y;
+                vec.s = mesh->mTextureCoords[0][i].x; 
+                vec.t = mesh->mTextureCoords[0][i].y;
                 vertex.TexCoords = vec;
                 // tangent
                 vector.x = mesh->mTangents[i].x;
@@ -162,7 +185,29 @@ private:
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
         
         // return a mesh object created from the extracted mesh data
-        return Mesh(vertices, indices, textures);
+        return Mesh(vertices, indices, textures, mesh->mMaterialIndex);
+    }
+
+    Material loadMaterial(aiMaterial* mat)
+    {
+        Material material;
+        aiColor3D color(0.f, 0.f, 0.f);
+        float shininess;
+
+        mat->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+        material.Diffuse = glm::vec3(color.r, color.g, color.b);
+
+        mat->Get(AI_MATKEY_COLOR_AMBIENT, color);
+        material.Ambient = glm::vec3(color.r, color.b, color.g);
+
+        mat->Get(AI_MATKEY_COLOR_SPECULAR, color);
+        material.Specular = glm::vec3(color.r, color.g, color.b);
+
+        mat->Get(AI_MATKEY_SHININESS, shininess);
+        material.Shininess = shininess;
+
+
+        return material;
     }
 
     // checks all material textures of a given type and loads the textures if they're not loaded yet.

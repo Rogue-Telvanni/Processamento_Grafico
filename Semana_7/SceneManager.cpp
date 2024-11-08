@@ -56,6 +56,7 @@ void SceneManager::initializeGraphics()
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
 	}
+	stbi_set_flip_vertically_on_load(true);
 
 	// Obtendo as informações de versão
 	const GLubyte* renderer = glGetString(GL_RENDERER); /* get renderer string */
@@ -216,8 +217,6 @@ void SceneManager::key_callback(GLFWwindow* window, int key, int scancode, int a
 			selected_obj = 1;
 		if (key == GLFW_KEY_3)
 			selected_obj = 2;
-		if (key == GLFW_KEY_4)
-			selected_obj = 3;
 	}
 }
 
@@ -276,8 +275,8 @@ void SceneManager::loadObjs()
 {
 	//cube
 
-	models.push_back(Model(std::filesystem::path("../assets/cube.obj")));
-	cout << "load cube"<< endl;
+	models.push_back(Model(std::filesystem::path("../assets/Naves/LightCruiser05.obj")));
+	cout << "load cruiser"<< endl;
 
 	models.push_back(Model(std::filesystem::path("../assets/Suzanne.obj")));
 	cout << "load suzanne"<< endl;
