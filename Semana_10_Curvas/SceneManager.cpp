@@ -1,4 +1,5 @@
 #include "SceneManager.h"
+#include "CurveManager.h"
 #include <filesystem>
 
 
@@ -18,6 +19,11 @@ float lastFrame = 0.0f;
 //object to render
 static int selected_obj = 0;
 
+//curves manager
+CurveManager curveMan;
+
+//render mode
+bool render_models = true;
 
 
 SceneManager::SceneManager()
@@ -67,6 +73,7 @@ void SceneManager::initializeGraphics()
 
 	// Compilando e buildando o programa de shader
 	addShader("Shaders/phong.vs", "Shaders/phong.fs");
+	addShader("Shaders/curve.vs", "Shaders/curve.fs");
 	
 	setupScene();
 }
@@ -104,15 +111,26 @@ void SceneManager::render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLineWidth(10);
 
-	Shader shader = *shaders[0];
-	
-	Model obj = models[selected_obj];
-	obj.Draw(shader);
+	if(render_models)
+	{
+		Shader shader = *shaders[0];
+
+		Model obj = models[selected_obj];
+		obj.Draw(shader);
+	}
+	else
+	{
+		Shader shader = *shaders[1];
+		curveMan.Draw(curveMan.BEZIER, shader);
+	}
 }
 
 void SceneManager::update(GLFWwindow *window)
 {
 	processInput(window);
+	if(!render_models)
+		return;
+
 	Shader shader = *shaders[0];
 
 	// matrix de projeção
@@ -209,6 +227,11 @@ void SceneManager::key_callback(GLFWwindow* window, int key, int scancode, int a
 			rotateX = false;
 			rotateY = false;
 			rotateZ = true;
+		}
+
+		if(key == GLFW_KEY_C)
+		{
+			render_models = !render_models;
 		}
 
 		// object selection, only 3 obj for now
