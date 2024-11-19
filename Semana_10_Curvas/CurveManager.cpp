@@ -2,6 +2,14 @@
 
 CurveManager::CurveManager()
 {
+}
+
+CurveManager::~CurveManager()
+{
+}
+
+void CurveManager::Initialize()
+{
     curvaBezier.controlPoints = GenerateHeartControlPoints();
     curvaCatmullRom.controlPoints.push_back(curvaBezier.controlPoints[0]);
     for (int i=0; i<curvaBezier.controlPoints.size(); i++)
@@ -29,11 +37,7 @@ CurveManager::CurveManager()
     cout << curvaCatmullRom.curvePoints.size() << endl;
 }
 
-CurveManager::~CurveManager()
-{
-}
-
-void CurveManager::Draw(curveType type, Shader &shader)
+void CurveManager::Draw(CurveType type, Shader &shader)
 {
     shader.Use();
     //Desenhar a grid
@@ -227,7 +231,10 @@ GeometryGrid CurveManager::GenerateGrid(float cellSize) {
         indices.push_back((numCells + 1) * 2 + i * 2 + 1);
     }
 
-    // Configuração dos buffers VAO e EBO
+    // Configuração dos buffers VAO e EBO]
+    // wolfram
+    // desmos
+    // geogebra
     glGenVertexArrays(1, &grid.VAO);
     glGenBuffers(1, &grid.EBO);
 

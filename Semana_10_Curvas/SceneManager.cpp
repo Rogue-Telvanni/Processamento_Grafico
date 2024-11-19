@@ -21,6 +21,7 @@ static int selected_obj = 0;
 
 //curves manager
 CurveManager curveMan;
+CurveType c_tupe = BEZIER;
 
 //render mode
 bool render_models = true;
@@ -101,6 +102,7 @@ void SceneManager::setupScene()
 	int width, height;
 	glfwGetFramebufferSize(this->window, &width, &height);
 	glViewport(0, 0, width, height);
+	curveMan.Initialize();
 }
 
 void SceneManager::render()
@@ -121,7 +123,7 @@ void SceneManager::render()
 	else
 	{
 		Shader shader = *shaders[1];
-		curveMan.Draw(curveMan.BEZIER, shader);
+		curveMan.Draw(c_tupe, shader);
 	}
 }
 
@@ -227,6 +229,15 @@ void SceneManager::key_callback(GLFWwindow* window, int key, int scancode, int a
 			rotateX = false;
 			rotateY = false;
 			rotateZ = true;
+		}
+		
+		if(key == GLFW_KEY_B)
+		{
+			c_tupe = BEZIER;
+		}
+		if (key == GLFW_KEY_G)
+		{
+			c_tupe = CAT_MULL;
 		}
 
 		if(key == GLFW_KEY_C)

@@ -28,18 +28,20 @@ struct GeometryAxes {
     GLuint VBO;
 };
 
+enum CurveType
+{
+    CAT_MULL = 0,
+    BEZIER = 1
+};
+
 class CurveManager
 {
 public:
 	CurveManager();
 	~CurveManager();
 
-    enum curveType {
-        CAT_MULL = 0,
-        BEZIER = 1
-    };
-
-	void Draw(curveType type, Shader &shader);
+	void Draw(CurveType type, Shader &shader);
+	void Initialize();
 private:
 	/// Outras funções
     void InitializeBernsteinMatrix(glm::mat4x4 &matrix);
