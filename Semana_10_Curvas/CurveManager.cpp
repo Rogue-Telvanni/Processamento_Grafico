@@ -37,6 +37,26 @@ void CurveManager::Initialize()
     cout << curvaCatmullRom.curvePoints.size() << endl;
 }
 
+glm::vec3 CurveManager::GetCurvePosition(CurveType type, int pos)
+{
+    if (type == BEZIER)
+    {
+        return curvaBezier.curvePoints[pos];
+    }
+
+    return curvaCatmullRom.curvePoints[pos];
+}
+
+std::size_t CurveManager::GetCurveSize(CurveType type)
+{
+    if (type == BEZIER)
+    {
+        return curvaBezier.curvePoints.size();
+    }
+
+    return curvaCatmullRom.curvePoints.size();
+}
+
 void CurveManager::Draw(CurveType type, Shader &shader)
 {
     shader.Use();

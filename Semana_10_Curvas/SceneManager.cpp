@@ -4,7 +4,7 @@
 
 
 GLuint WIDTH, HEIGHT;
-
+int FPS = 60;
 bool rotateX = false, rotateY = false, rotateZ = false;
 
 // camera
@@ -22,6 +22,7 @@ static int selected_obj = 0;
 //curves manager
 CurveManager curveMan;
 CurveType c_tupe = BEZIER;
+int curve_position = 0;
 
 //render mode
 bool render_models = true;
@@ -124,16 +125,40 @@ void SceneManager::render()
 	{
 		Shader shader = *shaders[1];
 		curveMan.Draw(c_tupe, shader);
+
+		shader = *shaders[0];
+		Model obj = models[2];
+		obj.Draw(shader);
 	}
 }
 
 void SceneManager::update(GLFWwindow *window)
 {
 	processInput(window);
-	if(!render_models)
-		return;
-
 	Shader shader = *shaders[0];
+
+	if(!render_models)
+	{
+		Model obj = models[2];
+		glm::vec3 position = curveMan.GetCurvePosition(c_tupe, curve_position);
+
+		// Incrementando o índice do frame apenas quando fechar a taxa de FPS desejada
+		float angle = 0.0;
+		float angle2 = 0.0;
+		curve_position = (curve_position + 1) % curveMan.GetCurveSize(c_tupe); // incrementando ciclicamente o indice do Frame
+		glm::vec3 nextPos = curveMan.GetCurvePosition(c_tupe, curve_position);
+		glm::vec3 dir = glm::normalize(nextPos - position);
+		angle = atan2(dir.y, dir.x) + glm::radians(-90.0f);
+		angle2 = atan2(dir.x, dir.z) + glm::radians(-45.0f);
+
+		glm::vec3 dimensions = glm::vec3(0.2, 0.2, 1.0);
+		glm::vec3 axis = glm::vec3(0.0, 0.0, 1.0);
+		obj.Crawl(shader, position, dimensions, angle, axis);
+
+		axis = glm::vec3(0.0, 1.0, 0.0);
+		obj.Crawl(shader, position, dimensions, angle2, axis);
+		return;
+	}
 
 	// matrix de projeção
 	this->projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
@@ -177,9 +202,12 @@ void SceneManager::run()
 
 		// Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
 		glfwPollEvents();
-		float angle = (GLfloat)glfwGetTime();
-		deltaTime = angle - lastFrame;
-		lastFrame = angle;
+		float frameTime = (GLfloat)glfwGetTime();
+		deltaTime = frameTime - lastFrame;
+		lastFrame = frameTime;
+
+		if (deltaTime < 1 / FPS)
+			continue;
 
 		// Update method(s)
 		update(window);

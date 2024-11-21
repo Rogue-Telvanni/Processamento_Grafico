@@ -2,6 +2,7 @@
 
 #include <glad/glad.h> 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <stb_image.h>
 #include <assimp/Importer.hpp>
@@ -58,7 +59,21 @@ public:
             mesh.Draw(shader);
         }
     }
-    
+
+    void Crawl(Shader &shader, glm::vec3 position, glm::vec3 dimensions, float angle, glm::vec3 axis)
+    {
+        // Matriz de modelo : transformações na geometria(objeto)
+        glm::mat4 model = glm::mat4(1); // matriz identidade
+        // Translação
+        model = glm::translate(model, position);
+        // Rotação
+        model = glm::rotate(model, angle, axis);
+        // Escala
+        model = glm::scale(model, dimensions);
+	    shader.setMat4("model", glm::value_ptr(model));
+        //Draw(shader);
+    }
+
 private:
     // loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
     void loadModel(std::string const &path)

@@ -41,6 +41,8 @@ public:
 	~CurveManager();
 
 	void Draw(CurveType type, Shader &shader);
+    glm::vec3 GetCurvePosition(CurveType type, int pos);
+    std::size_t GetCurveSize(CurveType type);
 	void Initialize();
 private:
 	/// Outras funções
