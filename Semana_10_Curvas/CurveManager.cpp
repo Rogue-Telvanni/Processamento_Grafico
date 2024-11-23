@@ -10,27 +10,82 @@ CurveManager::~CurveManager()
 
 void CurveManager::Initialize()
 {
-    curvaBezier.controlPoints = GenerateHeartControlPoints();
-    curvaCatmullRom.controlPoints.push_back(curvaBezier.controlPoints[0]);
-    for (int i=0; i<curvaBezier.controlPoints.size(); i++)
+    smile = GenerateSmileControlPoints();
+    //curvas de catmull
+    //left_eye
+    smile.catmull_left_eye.controlPoints.push_back(smile.left_eye[0]);
+    for (int i=0; i<smile.left_eye.size(); i++)
     {
-        curvaCatmullRom.controlPoints.push_back(curvaBezier.controlPoints[i]);
+        smile.catmull_left_eye.controlPoints.push_back(smile.left_eye[i]);
     }
-    curvaCatmullRom.controlPoints.push_back(curvaBezier.controlPoints[curvaBezier.controlPoints.size()-1]);
+    smile.catmull_left_eye.controlPoints.push_back(smile.left_eye[smile.left_eye.size()-1]);
 
-    // Gerar pontos da curva de Bézier
-    int numCurvePoints = 100; // Quantidade de pontos por segmento na curva
-    GenerateGlobalBezierCurvePoints(curvaBezier, numCurvePoints);
-    GenerateCatmullRomCurvePoints(curvaCatmullRom, numCurvePoints);
+    // right_eye
+    smile.catmull_rigth_eye.controlPoints.push_back(smile.right_eye[0]);
+    for (int i=0; i<smile.right_eye.size(); i++)
+    {
+        smile.catmull_rigth_eye.controlPoints.push_back(smile.right_eye[i]);
+    }
+    smile.catmull_rigth_eye.controlPoints.push_back(smile.right_eye[smile.right_eye.size()-1]);
+
+    // smile
+    smile.catmull_smile.controlPoints.push_back(smile.smile[0]);
+    for (int i=0; i<smile.smile.size(); i++)
+    {
+        smile.catmull_smile.controlPoints.push_back(smile.smile[i]);
+    }
+    smile.catmull_smile.controlPoints.push_back(smile.smile[smile.smile.size()-1]);
+
+    // face
+    smile.catmull_face.controlPoints.push_back(smile.face[0]);
+    for (int i=0; i<smile.face.size(); i++)
+    {
+        smile.catmull_face.controlPoints.push_back(smile.face[i]);
+    }
+    smile.catmull_face.controlPoints.push_back(smile.face[smile.face.size()-1]);
+
+    smile.VAO_left_eye = GenerateControlPointsBuffer(smile.left_eye);
+    smile.VAO_right_eye = GenerateControlPointsBuffer(smile.right_eye);
+    smile.VAO_smile = GenerateControlPointsBuffer(smile.smile);
+    smile.VAO_face = GenerateControlPointsBuffer(smile.face);
+
+    GenerateCatmullRomCurvePoints(smile.catmull_left_eye, 30);
+    GenerateCatmullRomCurvePoints(smile.catmull_rigth_eye, 30);
+    GenerateCatmullRomCurvePoints(smile.catmull_smile, 50);
+    GenerateCatmullRomCurvePoints(smile.catmull_face, 100);
+    smile.VAO_cat_left_eye = GenerateControlPointsBuffer(smile.catmull_left_eye.curvePoints);
+    smile.VAO_cat_right_eye = GenerateControlPointsBuffer(smile.catmull_rigth_eye.curvePoints);
+    smile.VAO_cat_smile = GenerateControlPointsBuffer(smile.catmull_smile.curvePoints);
+    smile.VAO_cat_face = GenerateControlPointsBuffer(smile.catmull_face.curvePoints);
+
+
+
+    // curvaBezier.controlPoints = GenerateHeartControlPoints();
+    // curvaCatmullRom.controlPoints.push_back(curvaBezier.controlPoints[0]);
+    // for (int i=0; i<curvaBezier.controlPoints.size(); i++)
+    // {
+    //     curvaCatmullRom.controlPoints.push_back(curvaBezier.controlPoints[i]);
+    // }
+    // curvaCatmullRom.controlPoints.push_back(curvaBezier.controlPoints[curvaBezier.controlPoints.size()-1]);
+
+    // // Gerar pontos da curva de Bézier
+    // int numCurvePoints = 100; // Quantidade de pontos por segmento na curva
+    // GenerateGlobalBezierCurvePoints(curvaBezier, numCurvePoints);
+    // GenerateCatmullRomCurvePoints(curvaCatmullRom, numCurvePoints);
+    
+    // //smile
+    
+    // GenerateCatmullRomCurvePoints(curvaCatmullRom, numCurvePoints);
+
 
     //Cria a grid de debug
     grid = GenerateGrid(0.1f);
     axes = CreateAxesVAO();
 
-    //Cria os buffers de geometria dos pontos da curva
-    VAOControl = GenerateControlPointsBuffer(curvaBezier.controlPoints);
-    VAOBezierCurve = GenerateControlPointsBuffer(curvaBezier.curvePoints);
-    VAOCatmullRomCurve = GenerateControlPointsBuffer(curvaCatmullRom.curvePoints);
+    // //Cria os buffers de geometria dos pontos da curva
+    // VAOControl = GenerateControlPointsBuffer(curvaBezier.controlPoints);
+    // VAOBezierCurve = GenerateControlPointsBuffer(curvaBezier.curvePoints);
+    // VAOCatmullRomCurve = GenerateControlPointsBuffer(curvaCatmullRom.curvePoints);
 
     cout << curvaBezier.controlPoints.size() << endl;
     cout << curvaBezier.curvePoints.size() << endl;
@@ -44,7 +99,7 @@ glm::vec3 CurveManager::GetCurvePosition(CurveType type, int pos)
         return curvaBezier.curvePoints[pos];
     }
 
-    return curvaCatmullRom.curvePoints[pos];
+    return smile.catmull_face.curvePoints[pos];
 }
 
 std::size_t CurveManager::GetCurveSize(CurveType type)
@@ -54,7 +109,7 @@ std::size_t CurveManager::GetCurveSize(CurveType type)
         return curvaBezier.curvePoints.size();
     }
 
-    return curvaCatmullRom.curvePoints.size();
+    return smile.catmull_face.curvePoints.size();
 }
 
 void CurveManager::Draw(CurveType type, Shader &shader)
@@ -76,16 +131,43 @@ void CurveManager::Draw(CurveType type, Shader &shader)
     else
     {
         // Desenhar pontos da curva de Catmull e conectar com linhas
-        glBindVertexArray(VAOCatmullRomCurve);
+        glBindVertexArray(smile.VAO_cat_left_eye);
         shader.setVec4("finalColor", 0.0f, 1.0f, 0.0f,1.0f); // Verde para a curva
-        glDrawArrays(GL_LINE_STRIP, 0, curvaCatmullRom.curvePoints.size()); // Desenha a curva como uma linha contínua
+        glDrawArrays(GL_LINE_STRIP, 0, smile.catmull_left_eye.curvePoints.size()); // Desenha a curva como uma linha contínua
+        
+        glBindVertexArray(smile.VAO_cat_right_eye);
+        shader.setVec4("finalColor", 0.0f, 1.0f, 0.0f,1.0f); // Verde para a curva
+        glDrawArrays(GL_LINE_STRIP, 0, smile.catmull_rigth_eye.curvePoints.size()); // Desenha a curva como uma linha contínua
+
+        glBindVertexArray(smile.VAO_cat_smile);
+        shader.setVec4("finalColor", 0.0f, 1.0f, 0.0f,1.0f); // Verde para a curva
+        glDrawArrays(GL_LINE_STRIP, 0, smile.catmull_smile.curvePoints.size()); // Desenha a curva como uma linha contínua
+
+        glBindVertexArray(smile.VAO_cat_face);
+        shader.setVec4("finalColor", 0.0f, 1.0f, 0.0f,1.0f); // Verde para a curva
+        glDrawArrays(GL_LINE_STRIP, 0, smile.catmull_face.curvePoints.size()); // Desenha a curva como uma linha contínua
     }
 
     // Desenhar pontos de controle maiores e com cor diferenciada
-    glBindVertexArray(VAOControl);
+    glBindVertexArray(smile.VAO_left_eye);
     shader.setVec4("finalColor", 0.0f, 0.0f, 0.0f, 1.0f); // Preto para pontos de controle
     glPointSize(12.0f);
-    glDrawArrays(GL_POINTS, 0, curvaBezier.controlPoints.size());
+    glDrawArrays(GL_POINTS, 0, smile.left_eye.size());
+
+    glBindVertexArray(smile.VAO_right_eye);
+    shader.setVec4("finalColor", 0.0f, 0.0f, 0.0f, 1.0f); // Preto para pontos de controle
+    glPointSize(12.0f);
+    glDrawArrays(GL_POINTS, 0, smile.right_eye.size());
+
+    glBindVertexArray(smile.VAO_smile);
+    shader.setVec4("finalColor", 0.0f, 0.0f, 0.0f, 1.0f); // Preto para pontos de controle
+    glPointSize(12.0f);
+    glDrawArrays(GL_POINTS, 0, smile.smile.size());
+
+    glBindVertexArray(smile.VAO_face);
+    shader.setVec4("finalColor", 0.0f, 0.0f, 0.0f, 1.0f); // Preto para pontos de controle
+    glPointSize(12.0f);
+    glDrawArrays(GL_POINTS, 0, smile.face.size());
 }
 
 void CurveManager::InitializeBernsteinMatrix(glm::mat4 &matrix)
@@ -154,7 +236,7 @@ void CurveManager::GenerateCatmullRomCurvePoints(Curve &curve, int numPoints) {
 
     InitializeCatmullRomMatrix(curve.M);
     // Calcular os pontos ao longo da curva com base em Bernstein
-     // Loop sobre os pontos de controle em grupos de 4
+    // Loop sobre os pontos de controle em grupos de 4
 
     float piece = 1.0 / (float) numPoints;
     float t;
@@ -280,7 +362,8 @@ GeometryGrid CurveManager::GenerateGrid(float cellSize) {
     return grid;
 }
 
-void CurveManager::DrawGrid(const GeometryGrid& grid, GLuint shaderID) {
+void CurveManager::DrawGrid(const GeometryGrid &grid, GLuint shaderID)
+{
     glUseProgram(shaderID);
 
     // Define a cor cinza médio para a grid
@@ -290,7 +373,7 @@ void CurveManager::DrawGrid(const GeometryGrid& grid, GLuint shaderID) {
     // Ativa o VAO da grid
     glBindVertexArray(grid.VAO);
 
-    //Largura da grid
+    // Largura da grid
     glLineWidth(1.0f);
 
     // Desenha a grid como linhas usando GL_LINES para contorno
@@ -300,7 +383,8 @@ void CurveManager::DrawGrid(const GeometryGrid& grid, GLuint shaderID) {
     glBindVertexArray(0);
 }
 
-GeometryAxes CurveManager::CreateAxesVAO() {
+GeometryAxes CurveManager::CreateAxesVAO()
+{
     GeometryAxes axes;
     glm::vec3 axisVertices[] = {
         glm::vec3(-1.0f, 0.0f, 0.0f), // X axis start
@@ -316,21 +400,22 @@ GeometryAxes CurveManager::CreateAxesVAO() {
     glBindBuffer(GL_ARRAY_BUFFER, axes.VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(axisVertices), axisVertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0);
     glEnableVertexAttribArray(0);
 
     glBindVertexArray(0); // Unbind VAO
     return axes;
 }
 
-void CurveManager::DrawAxesVAO(const GeometryAxes& axes, GLuint shaderID) {
+void CurveManager::DrawAxesVAO(const GeometryAxes &axes, GLuint shaderID)
+{
     glUseProgram(shaderID);
 
     // Desenha o eixo X em vermelho
     GLint colorLocation = glGetUniformLocation(shaderID, "finalColor");
     glUniform4f(colorLocation, 1.0f, 0.0f, 0.0f, 1.0f); // Cor vermelha
 
-    //Largura dos eixos
+    // Largura dos eixos
     glLineWidth(3.0f);
 
     glBindVertexArray(axes.VAO);
@@ -338,34 +423,147 @@ void CurveManager::DrawAxesVAO(const GeometryAxes& axes, GLuint shaderID) {
 
     // Desenha o eixo Y em azul
     glUniform4f(colorLocation, 0.0f, 0.0f, 1.0f, 1.0f); // Cor azul
-    glDrawArrays(GL_LINES, 2, 2); // Desenha o eixo Y
+    glDrawArrays(GL_LINES, 2, 2);                       // Desenha o eixo Y
 
     glBindVertexArray(0); // Unbind VAO
 }
 
-std::vector<glm::vec3> CurveManager::GenerateHeartControlPoints(int numPoints) {
+std::vector<glm::vec3> CurveManager::GenerateHeartControlPoints(int numPoints)
+{
     std::vector<glm::vec3> controlPoints;
 
-    // Define o intervalo para t: de 0 a 2 * PI, dividido em numPoints
-    float step = 2 * 3.14159 / (numPoints-1);
+    // Define number of points for each feature
+    int numFacePoints = 100; // For the outer circle
+    int numEyePoints = 30;   // For each eye
+    int numSmilePoints = 50; // For the smile
 
-    for (int i = 0; i < numPoints-1; i++) {
-        float t = i * step;
-
-        // Calcula x(t) e y(t) usando as fórmulas paramétricas
-        float x = 16 * pow(sin(t), 3);
-        float y = 13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t);
-
-        // Normaliza os pontos para mantê-los dentro de [-1, 1] no espaço 3D
-        x /= 16.0f;  // Dividir por 16 para normalizar x entre -1 e 1
-        y /= 16.0f;  // Dividir por 16 para normalizar y aproximadamente entre -1 e 1
-        y += 0.15;
-        // Adiciona o ponto ao vetor de pontos de controle
+    // Outer circle (face boundary)
+    float stepFace = 2 * 3.14159f / numFacePoints;
+    for (int i = 0; i < numFacePoints; i++)
+    {
+        float t = i * stepFace;
+        float x = cos(t);
+        float y = sin(t);
         controlPoints.push_back(glm::vec3(x, y, 0.0f));
     }
-    controlPoints.push_back(controlPoints[0]);
+
+    // Left eye
+    float eyeRadius = 0.1f;
+    float eyeOffsetX = -0.3f, eyeOffsetY = 0.3f;
+    float stepEye = 2 * 3.14159f / numEyePoints;
+    for (int i = 0; i < numEyePoints; i++)
+    {
+        float t = i * stepEye;
+        float x = eyeOffsetX + eyeRadius * cos(t);
+        float y = eyeOffsetY + eyeRadius * sin(t);
+        controlPoints.push_back(glm::vec3(x, y, 0.0f));
+    }
+
+    // Right eye
+    eyeOffsetX = 0.3f; // Adjust x offset for the right eye
+    for (int i = 0; i < numEyePoints; i++)
+    {
+        float t = i * stepEye;
+        float x = eyeOffsetX + eyeRadius * cos(t);
+        float y = eyeOffsetY + eyeRadius * sin(t);
+        controlPoints.push_back(glm::vec3(x, y, 0.0f));
+    }
+
+    // Smile (a parametric curve)
+    float smileRadius = 0.6f;
+    float smileStart = 3.14159f * 0.1f; // Start slightly off horizontal
+    float smileEnd = 3.14159f * 0.9f;   // End slightly off horizontal
+    float stepSmile = (smileEnd - smileStart) / numSmilePoints;
+    for (int i = 0; i <= numSmilePoints; i++)
+    {
+        float t = smileStart + i * stepSmile;
+        float x = smileRadius * cos(t);
+        float y = -0.4f + smileRadius * sin(t); // Adjust y for the smile position
+        controlPoints.push_back(glm::vec3(x, y, 0.0f));
+    }
 
     return controlPoints;
+
+    // std::vector<glm::vec3> controlPoints;
+
+    // // Define o intervalo para t: de 0 a 2 * PI, dividido em numPoints
+    // float step = 2 * 3.14159 / (numPoints-1);
+
+    // for (int i = 0; i < numPoints-1; i++) {
+    //     float t = i * step;
+
+    //     // Calcula x(t) e y(t) usando as fórmulas paramétricas
+    //     float x = 16 * pow(sin(t), 3);
+    //     float y = 13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t);
+
+    //     // Normaliza os pontos para mantê-los dentro de [-1, 1] no espaço 3D
+    //     x /= 16.0f;  // Dividir por 16 para normalizar x entre -1 e 1
+    //     y /= 16.0f;  // Dividir por 16 para normalizar y aproximadamente entre -1 e 1
+    //     y += 0.15;
+    //     // Adiciona o ponto ao vetor de pontos de controle
+    //     controlPoints.push_back(glm::vec3(x, y, 0.0f));
+    // }
+    // controlPoints.push_back(controlPoints[0]);
+
+    // return controlPoints;
+}
+
+Smile CurveManager::GenerateSmileControlPoints()
+{
+    Smile smile;
+    std::vector<glm::vec3> controlPoints;
+
+    // Define number of points for each feature
+    int numFacePoints = 100; // For the outer circle
+    int numEyePoints = 30;   // For each eye
+    int numSmilePoints = 50; // For the smile
+
+    // Outer circle (face boundary)
+    float stepFace = 2 * 3.14159f / numFacePoints;
+    for (int i = 0; i < numFacePoints; i++)
+    {
+        float t = i * stepFace;
+        float x = cos(t);
+        float y = sin(t);
+        smile.face.push_back(glm::vec3(x, y, 0.0f));
+    }
+
+    // Left eye
+    float eyeRadius = 0.1f;
+    float eyeOffsetX = -0.3f, eyeOffsetY = 0.3f;
+    float stepEye = 2 * 3.14159f / numEyePoints;
+    for (int i = 0; i < numEyePoints; i++)
+    {
+        float t = i * stepEye;
+        float x = eyeOffsetX + eyeRadius * cos(t);
+        float y = eyeOffsetY + eyeRadius * sin(t);
+        smile.left_eye.push_back(glm::vec3(x, y, 0.0f));
+    }
+
+    // Right eye
+    eyeOffsetX = 0.3f; // Adjust x offset for the right eye
+    for (int i = 0; i < numEyePoints; i++)
+    {
+        float t = i * stepEye;
+        float x = eyeOffsetX + eyeRadius * cos(t);
+        float y = eyeOffsetY + eyeRadius * sin(t);
+        smile.right_eye.push_back(glm::vec3(x, y, 0.0f));
+    }
+
+    // Smile (a parametric curve)
+    float smileRadius = 0.6f;
+    float smileStart = 3.14159f * 0.1f; // Start slightly off horizontal
+    float smileEnd = 3.14159f * 0.9f;   // End slightly off horizontal
+    float stepSmile = (smileEnd - smileStart) / numSmilePoints;
+    for (int i = 0; i <= numSmilePoints; i++)
+    {
+        float t = smileStart + i * stepSmile;
+        float x = smileRadius * cos(t);
+        float y = -0.4f + smileRadius * sin(t); // Adjust y for the smile position
+        smile.smile.push_back(glm::vec3(x, y, 0.0f));
+    }
+
+    return smile;
 }
 
 void CurveManager::GenerateGlobalBezierCurvePoints(Curve &curve, int numPoints) {

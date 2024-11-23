@@ -28,6 +28,28 @@ struct GeometryAxes {
     GLuint VBO;
 };
 
+struct Smile{
+    std::vector<glm::vec3> right_eye;
+    std::vector<glm::vec3> left_eye;
+    std::vector<glm::vec3> smile;
+    std::vector<glm::vec3> face;
+
+    Curve catmull_rigth_eye;
+    Curve catmull_left_eye;
+    Curve catmull_smile;
+    Curve catmull_face;
+
+    GLuint VAO_right_eye;
+    GLuint VAO_left_eye;
+    GLuint VAO_smile;
+    GLuint VAO_face;
+
+    GLuint VAO_cat_right_eye;
+    GLuint VAO_cat_left_eye;
+    GLuint VAO_cat_smile;
+    GLuint VAO_cat_face;
+};
+
 enum CurveType
 {
     CAT_MULL = 0,
@@ -59,6 +81,7 @@ private:
     GeometryAxes CreateAxesVAO();
     void DrawAxesVAO(const GeometryAxes &axes, GLuint shaderID);
     std::vector<glm::vec3> GenerateHeartControlPoints(int numPoints = 20);
+    Smile GenerateSmileControlPoints();
 
     void GenerateGlobalBezierCurvePoints(Curve &curve, int numPoints);
 
@@ -71,4 +94,6 @@ private:
     GLuint VAOControl;
     GLuint VAOBezierCurve;
     GLuint VAOCatmullRomCurve;
+
+    Smile smile;
 };

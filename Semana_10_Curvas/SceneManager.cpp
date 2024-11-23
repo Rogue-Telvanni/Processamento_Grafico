@@ -21,7 +21,7 @@ static int selected_obj = 0;
 
 //curves manager
 CurveManager curveMan;
-CurveType c_tupe = BEZIER;
+CurveType c_tupe = CAT_MULL;
 int curve_position = 0;
 
 //render mode
@@ -54,7 +54,7 @@ void SceneManager::initializeGraphics()
 	this->window = glfwCreateWindow(WIDTH, HEIGHT, "Camera", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 	// Fazendo o registro da função de callback para a janela GLFW
 	glfwSetKeyCallback(window, key_callback);
