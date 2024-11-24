@@ -55,7 +55,7 @@ void SceneManager::initializeGraphics()
 	this->window = glfwCreateWindow(WIDTH, HEIGHT, "Camera", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// Fazendo o registro da função de callback para a janela GLFW
 	glfwSetKeyCallback(window, key_callback);
@@ -121,8 +121,29 @@ void SceneManager::render()
 	{
 		Shader shader = *shaders[0];
 
-		Model obj = models[selected_obj];
-		obj.Draw(shader);
+		for(int i = 0; i < models.size(); i++)
+		{
+			glm::mat4 model = glm::mat4(1);
+			model = glm::translate(model, glm::vec3(0.0f + i * 2, 0.0f, 0.0f + i * 2));
+			model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+			if (rotateX)
+			{
+				model = glm::rotate(model, lastFrame, glm::vec3(1.0f, 0.0f, 0.0f));
+			}
+			else if (rotateY)
+			{
+				model = glm::rotate(model, lastFrame, glm::vec3(0.0f, 1.0f, 0.0f));
+			}
+			else if (rotateZ)
+			{
+				model = glm::rotate(model, lastFrame, glm::vec3(0.0f, 0.0f, 1.0f));
+			}
+
+			shader.setMat4("model", glm::value_ptr(model));
+
+			Model obj = models[i];
+			obj.Draw(shader);
+		}
 	}
 	else
 	{
@@ -163,21 +184,21 @@ void SceneManager::update(GLFWwindow *window)
 	this->view = camera.GetViewMatrix();
 	shader.setMat4("view", glm::value_ptr(view));
 
-	this->model = glm::mat4(1);
-	if (rotateX)
-	{
-		model = glm::rotate(model, lastFrame, glm::vec3(1.0f, 0.0f, 0.0f));
-	}
-	else if (rotateY)
-	{
-		model = glm::rotate(model, lastFrame, glm::vec3(0.0f, 1.0f, 0.0f));
-	}
-	else if (rotateZ)
-	{
-		model = glm::rotate(model, lastFrame, glm::vec3(0.0f, 0.0f, 1.0f));
-	}
+	// this->model = glm::mat4(1);
+	// if (rotateX)
+	// {
+	// 	model = glm::rotate(model, lastFrame, glm::vec3(1.0f, 0.0f, 0.0f));
+	// }
+	// else if (rotateY)
+	// {
+	// 	model = glm::rotate(model, lastFrame, glm::vec3(0.0f, 1.0f, 0.0f));
+	// }
+	// else if (rotateZ)
+	// {
+	// 	model = glm::rotate(model, lastFrame, glm::vec3(0.0f, 0.0f, 1.0f));
+	// }
 
-	shader.setMat4("model", glm::value_ptr(model));
+	// shader.setMat4("model", glm::value_ptr(model));
 
 	return;
 }
