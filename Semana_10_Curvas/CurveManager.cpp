@@ -92,27 +92,17 @@ void CurveManager::Initialize()
     cout << curvaCatmullRom.curvePoints.size() << endl;
 }
 
-glm::vec3 CurveManager::GetCurvePosition(CurveType type, int pos)
+glm::vec3 CurveManager::GetCurvePosition(int pos)
 {
-    if (type == BEZIER)
-    {
-        return curvaBezier.curvePoints[pos];
-    }
-
     return smile.catmull_face.curvePoints[pos];
 }
 
-std::size_t CurveManager::GetCurveSize(CurveType type)
+std::size_t CurveManager::GetCurveSize()
 {
-    if (type == BEZIER)
-    {
-        return curvaBezier.curvePoints.size();
-    }
-
     return smile.catmull_face.curvePoints.size();
 }
 
-void CurveManager::Draw(CurveType type, Shader &shader)
+void CurveManager::Draw(Shader &shader)
 {
     shader.Use();
     //Desenhar a grid
@@ -120,33 +110,30 @@ void CurveManager::Draw(CurveType type, Shader &shader)
     DrawAxesVAO(axes,shader.ID);
 
 
-    if(type == BEZIER)
-    {
-        // Desenhar pontos da curva de Bezier e conectar com linhas
-        glBindVertexArray(VAOBezierCurve);
-        shader.setVec4("finalColor", 1.0f, 0.0f, 1.0f,1.0f); // Magenta para a curva
-        glLineWidth(5.0);
-        glDrawArrays(GL_LINE_STRIP, 0, curvaBezier.curvePoints.size()); // Desenha a curva como uma linha contínua
-    }
-    else
-    {
+    // if(type == BEZIER)
+    // {
+    //     // Desenhar pontos da curva de Bezier e conectar com linhas
+    //     glBindVertexArray(VAOBezierCurve);
+    //     shader.setVec4("finalColor", 1.0f, 0.0f, 1.0f,1.0f); // Magenta para a curva
+    //     glLineWidth(5.0);
+    //     glDrawArrays(GL_LINE_STRIP, 0, curvaBezier.curvePoints.size()); // Desenha a curva como uma linha contínua
+    // }
         // Desenhar pontos da curva de Catmull e conectar com linhas
-        glBindVertexArray(smile.VAO_cat_left_eye);
-        shader.setVec4("finalColor", 0.0f, 1.0f, 0.0f,1.0f); // Verde para a curva
-        glDrawArrays(GL_LINE_STRIP, 0, smile.catmull_left_eye.curvePoints.size()); // Desenha a curva como uma linha contínua
-        
-        glBindVertexArray(smile.VAO_cat_right_eye);
-        shader.setVec4("finalColor", 0.0f, 1.0f, 0.0f,1.0f); // Verde para a curva
-        glDrawArrays(GL_LINE_STRIP, 0, smile.catmull_rigth_eye.curvePoints.size()); // Desenha a curva como uma linha contínua
+    glBindVertexArray(smile.VAO_cat_left_eye);
+    shader.setVec4("finalColor", 0.0f, 1.0f, 0.0f, 1.0f);                      // Verde para a curva
+    glDrawArrays(GL_LINE_STRIP, 0, smile.catmull_left_eye.curvePoints.size()); // Desenha a curva como uma linha contínua
 
-        glBindVertexArray(smile.VAO_cat_smile);
-        shader.setVec4("finalColor", 0.0f, 1.0f, 0.0f,1.0f); // Verde para a curva
-        glDrawArrays(GL_LINE_STRIP, 0, smile.catmull_smile.curvePoints.size()); // Desenha a curva como uma linha contínua
+    glBindVertexArray(smile.VAO_cat_right_eye);
+    shader.setVec4("finalColor", 0.0f, 1.0f, 0.0f, 1.0f);                       // Verde para a curva
+    glDrawArrays(GL_LINE_STRIP, 0, smile.catmull_rigth_eye.curvePoints.size()); // Desenha a curva como uma linha contínua
 
-        glBindVertexArray(smile.VAO_cat_face);
-        shader.setVec4("finalColor", 0.0f, 1.0f, 0.0f,1.0f); // Verde para a curva
-        glDrawArrays(GL_LINE_STRIP, 0, smile.catmull_face.curvePoints.size()); // Desenha a curva como uma linha contínua
-    }
+    glBindVertexArray(smile.VAO_cat_smile);
+    shader.setVec4("finalColor", 0.0f, 1.0f, 0.0f, 1.0f);                   // Verde para a curva
+    glDrawArrays(GL_LINE_STRIP, 0, smile.catmull_smile.curvePoints.size()); // Desenha a curva como uma linha contínua
+
+    glBindVertexArray(smile.VAO_cat_face);
+    shader.setVec4("finalColor", 0.0f, 1.0f, 0.0f, 1.0f);                  // Verde para a curva
+    glDrawArrays(GL_LINE_STRIP, 0, smile.catmull_face.curvePoints.size()); // Desenha a curva como uma linha contínua
 
     // Desenhar pontos de controle maiores e com cor diferenciada
     glBindVertexArray(smile.VAO_left_eye);

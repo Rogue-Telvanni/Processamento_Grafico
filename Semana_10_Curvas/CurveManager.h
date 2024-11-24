@@ -50,21 +50,15 @@ struct Smile{
     GLuint VAO_cat_face;
 };
 
-enum CurveType
-{
-    CAT_MULL = 0,
-    BEZIER = 1
-};
-
 class CurveManager
 {
 public:
 	CurveManager();
 	~CurveManager();
 
-	void Draw(CurveType type, Shader &shader);
-    glm::vec3 GetCurvePosition(CurveType type, int pos);
-    std::size_t GetCurveSize(CurveType type);
+	void Draw(Shader &shader);
+    glm::vec3 GetCurvePosition(int pos);
+    std::size_t GetCurveSize();
 	void Initialize();
 private:
 	/// Outras funções

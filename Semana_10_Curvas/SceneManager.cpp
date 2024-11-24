@@ -1,5 +1,6 @@
 #include "SceneManager.h"
 #include "CurveManager.h"
+#include "Triangle.h"
 #include <filesystem>
 
 
@@ -21,7 +22,7 @@ static int selected_obj = 0;
 
 //curves manager
 CurveManager curveMan;
-CurveType c_tupe = CAT_MULL;
+Triangle triangle;
 int curve_position = 0;
 
 //render mode
@@ -76,6 +77,7 @@ void SceneManager::initializeGraphics()
 	// Compilando e buildando o programa de shader
 	addShader("Shaders/phong.vs", "Shaders/phong.fs");
 	addShader("Shaders/curve.vs", "Shaders/curve.fs");
+	addShader("Shaders/triangle.vs", "Shaders/curve.fs");
 	
 	setupScene();
 }
@@ -104,6 +106,7 @@ void SceneManager::setupScene()
 	glfwGetFramebufferSize(this->window, &width, &height);
 	glViewport(0, 0, width, height);
 	curveMan.Initialize();
+	triangle.Initialize();
 }
 
 void SceneManager::render()
@@ -123,43 +126,34 @@ void SceneManager::render()
 	}
 	else
 	{
-		Shader shader = *shaders[1];
-		curveMan.Draw(c_tupe, shader);
-
-		shader = *shaders[0];
-		Model obj = models[2];
-		obj.Draw(shader);
+		curveMan.Draw(*shaders[1]);
+		triangle.Draw(*shaders[2]);
 	}
 }
 
 void SceneManager::update(GLFWwindow *window)
 {
 	processInput(window);
-	Shader shader = *shaders[0];
 
 	if(!render_models)
 	{
-		Model obj = models[2];
-		glm::vec3 position = curveMan.GetCurvePosition(c_tupe, curve_position);
+		Shader shader = *shaders[2];
 
+		glm::vec3 position = curveMan.GetCurvePosition(curve_position);
 		// Incrementando o índice do frame apenas quando fechar a taxa de FPS desejada
 		float angle = 0.0;
-		float angle2 = 0.0;
-		curve_position = (curve_position + 1) % curveMan.GetCurveSize(c_tupe); // incrementando ciclicamente o indice do Frame
-		glm::vec3 nextPos = curveMan.GetCurvePosition(c_tupe, curve_position);
+		curve_position = (curve_position + 1) % curveMan.GetCurveSize(); // incrementando ciclicamente o indice do Frame
+		glm::vec3 nextPos = curveMan.GetCurvePosition(curve_position);
 		glm::vec3 dir = glm::normalize(nextPos - position);
 		angle = atan2(dir.y, dir.x) + glm::radians(-90.0f);
-		angle2 = atan2(dir.x, dir.z) + glm::radians(-45.0f);
 
 		glm::vec3 dimensions = glm::vec3(0.2, 0.2, 1.0);
 		glm::vec3 axis = glm::vec3(0.0, 0.0, 1.0);
-		obj.Crawl(shader, position, dimensions, angle, axis);
-
-		axis = glm::vec3(0.0, 1.0, 0.0);
-		obj.Crawl(shader, position, dimensions, angle2, axis);
+		triangle.Crawl(shader, position, dimensions, angle, axis, (GLfloat)glfwGetTime());
 		return;
 	}
 
+	Shader shader = *shaders[0];
 	// matrix de projeção
 	this->projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 	shader.setMat4("projection", glm::value_ptr(projection));
@@ -206,8 +200,8 @@ void SceneManager::run()
 		deltaTime = frameTime - lastFrame;
 		lastFrame = frameTime;
 
-		if (deltaTime < 1 / FPS)
-			continue;
+		// if (deltaTime < 1 / FPS)
+		// 	continue;
 
 		// Update method(s)
 		update(window);
@@ -259,15 +253,6 @@ void SceneManager::key_callback(GLFWwindow* window, int key, int scancode, int a
 			rotateZ = true;
 		}
 		
-		if(key == GLFW_KEY_B)
-		{
-			c_tupe = BEZIER;
-		}
-		if (key == GLFW_KEY_G)
-		{
-			c_tupe = CAT_MULL;
-		}
-
 		if(key == GLFW_KEY_C)
 		{
 			render_models = !render_models;
