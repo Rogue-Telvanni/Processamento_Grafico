@@ -1,0 +1,130 @@
+newmtl R1Mtl
+Material Color
+Ka 0.180144 0 0
+Kd 0.180144 0 0
+Ks 0.108087 0 0 
+
+d 1
+
+Ns 0
+
+newmtl Glass1Mtl
+Material Color
+Ka 0.180144 0 0
+Kd 0.180144 0 0
+Ks 0.108087 0 0 
+
+d 0.4
+
+Ns 0
+
+newmtl Chrome7Mtl
+Material Color
+Ka 0.320382 0.547994 0.715465
+Kd 0.320382 0.547994 0.715465
+Ks 0.192229 0.328796 0.429279 
+
+d 1
+
+Ns 0
+
+newmtl Tire1Mtl
+Material Color
+Ka 0.00258583 0.00258583 0.00258583
+Kd 0.00258583 0.00258583 0.00258583
+Ks 0.0015515 0.0015515 0.0015515 
+
+d 1
+
+Ns 0
+
+newmtl Chrome1Mtl
+Material Color
+Ka 0.373615 0.368591 0.383775
+Kd 0.373615 0.368591 0.383775
+Ks 0.224169 0.221155 0.230265 
+
+d 1
+
+Ns 0
+
+newmtl Black1Mtl
+Material Color
+Ka 0.103634 0.108711 0.14198
+Kd 0.103634 0.108711 0.14198
+Ks 0.0621805 0.0652267 0.0851882 
+
+d 1
+
+Ns 0
+
+map_Bump Black1_nmap.png
+
+map_Ns Black1_spec.png
+
+newmtl Tac1Mtl
+Material Color
+Ka 0.353741 0.363604 0.420508
+Kd 0.353741 0.363604 0.420508
+Ks 0.212245 0.218162 0.252305 
+
+d 1
+
+Ns 0
+
+map_Ka Tac1_diff.png
+map_Kd Tac1_diff.png
+map_d Tac1_diff.png
+
+map_Bump Tac1_nmap.png
+
+map_Ns Tac1_spec.png
+
+newmtl Fli1Mtl
+Material Color
+Ka 0.766744 0.334458 0.0477758
+Kd 0.766744 0.334458 0.0477758
+Ks 0.460046 0.200675 0.0286655 
+
+d 1
+
+Ns 0
+
+newmtl Glass2Mtl
+Material Color
+Ka 0.373615 0.368591 0.383775
+Kd 0.373615 0.368591 0.383775
+Ks 0.224169 0.221155 0.230265 
+
+d 0.4
+
+Ns 0
+
+newmtl Color5Mtl
+Material Color
+Ka 0.867136 0.487765 0.0356144
+Kd 0.867136 0.487765 0.0356144
+Ks 0.520281 0.292659 0.0213686 
+
+d 1
+
+Ns 0
+
+map_Ka Color5_diff.png
+map_Kd Color5_diff.png
+map_d Color5_diff.png
+
+map_Bump Color5_nmap.png
+
+map_Ns Color5_spec.png
+
+newmtl Color1Mtl
+Material Color
+Ka 0.940601 0.940601 0.940601
+Kd 0.940601 0.940601 0.940601
+Ks 0.56436 0.56436 0.56436 
+
+d 1
+
+Ns 0
+

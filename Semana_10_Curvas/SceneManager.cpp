@@ -91,12 +91,6 @@ void SceneManager::setupScene()
 
 	Shader shader = *shaders[0];
 	shader.Use();
-	//Propriedades da superfície
-	shader.setFloat("ka",0.2);
-	shader.setFloat("ks", 0.5);
-	shader.setFloat("kd", 0.5);
-	shader.setFloat("q", 10.0);
-
 	//Propriedades da fonte de luz
 	shader.setVec3("lightPos",-2.0, 10.0, 3.0); 
 	shader.setVec3("lightColor",1.0, 1.0, 1.0);
@@ -122,9 +116,30 @@ void SceneManager::render()
 		Shader shader = *shaders[0];
 
 		for(int i = 0; i < models.size(); i++)
-		{
+		{	
+			Model obj = models[i];
+
 			glm::mat4 model = glm::mat4(1);
-			model = glm::translate(model, glm::vec3(0.0f + i * 2, 0.0f, 0.0f + i * 2));
+
+			filesystem::path p(obj.directory);
+			cout << p.stem() << endl;
+			if(p.stem() == "Naves")
+				model = glm::translate(model, glm::vec3(0.5f, 0.0f, -8.0f));
+			else if (p.stem() == "obj")
+			{
+				model = glm::translate(model, glm::vec3(-2.5f, 0.0f, -3.0f));
+				model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			}
+			else if (p.stem() == "Planetas")
+				model = glm::translate(model, glm::vec3(-2.0f, 0.0f, -3.0f));
+			else if (p.stem() == "Suzannes")
+				model = glm::translate(model, glm::vec3(-1.1f, 0.0f, -3.0f));
+			else if (p.stem() == "1963 Volkswagen Beetle")
+			{
+				model = glm::translate(model, glm::vec3(1.9f, -0.3f, 3.0f));
+				model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			}
+
 			model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
 			if (rotateX)
 			{
@@ -141,7 +156,6 @@ void SceneManager::render()
 
 			shader.setMat4("model", glm::value_ptr(model));
 
-			Model obj = models[i];
 			obj.Draw(shader);
 		}
 	}
@@ -255,7 +269,7 @@ void SceneManager::key_callback(GLFWwindow* window, int key, int scancode, int a
 	{
 		if (key == GLFW_KEY_X)
 		{
-			rotateX = true;
+			rotateX = !rotateX;
 			rotateY = false;
 			rotateZ = false;
 		}
@@ -263,7 +277,7 @@ void SceneManager::key_callback(GLFWwindow* window, int key, int scancode, int a
 		if (key == GLFW_KEY_Y)
 		{
 			rotateX = false;
-			rotateY = true;
+			rotateY = !rotateY;
 			rotateZ = false;
 		}
 
@@ -271,21 +285,13 @@ void SceneManager::key_callback(GLFWwindow* window, int key, int scancode, int a
 		{
 			rotateX = false;
 			rotateY = false;
-			rotateZ = true;
+			rotateZ = !rotateZ;
 		}
 		
 		if(key == GLFW_KEY_C)
 		{
 			render_models = !render_models;
 		}
-
-		// object selection, only 3 obj for now
-		if (key == GLFW_KEY_1)
-			selected_obj = 0;
-		if (key == GLFW_KEY_2)
-			selected_obj = 1;
-		if (key == GLFW_KEY_3)
-			selected_obj = 2;
 	}
 }
 
@@ -347,12 +353,15 @@ void SceneManager::loadObjs()
 	models.push_back(Model(std::filesystem::path("../assets/Naves/LightCruiser05.obj")));
 	cout << "load cruiser"<< endl;
 
-	models.push_back(Model(std::filesystem::path("../assets/Suzanne.obj")));
-	cout << "load suzanne"<< endl;
+	models.push_back(Model(std::filesystem::path("../assets/aratwearingabackpack/obj/model.obj")));
+	cout << "load rato"<< endl;
 
-	models.push_back(Model(std::filesystem::path("../assets/nave.obj")));
-	cout << "load nave"<< endl;
+	models.push_back(Model(std::filesystem::path("../assets/Planetas/planeta.obj")));
+	cout << "load planeta"<< endl;
 
-	// na_obj.VAO = loadSimpleOBJ("car.obj",na_obj.nVertices);
-	// cout << "load car"<< endl;
+	models.push_back(Model(std::filesystem::path("../assets/Suzannes/SuzanneHigh.obj")));
+	cout << "load SuzanneHigh"<< endl;
+
+	models.push_back(Model(std::filesystem::path("../assets/Carro/1963 Volkswagen Beetle/1963 Volkswagen Beetle.obj")));
+	cout << "load Carro"<< endl;
 }

@@ -54,7 +54,7 @@ void main()
     else
         texColor = texture(texture_diffuse1,texCoord);
 
-    vec3 result = (ambient + diffuse) * vec3(texColor) + specular;
+    vec3 result = (ambient + diffuse) * material.diffuse * vec3(texColor) + specular;
 
     fragColor = vec4(result,1.0);
     //fragColor = texture(texture_diffuse1, texColor);
