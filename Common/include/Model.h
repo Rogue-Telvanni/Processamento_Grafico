@@ -51,7 +51,6 @@ public:
             else
                 shader.setBool("useColor", true);
 
-            shader.setVec3("color", 0.f, 0.f, 1.f);
             shader.setVec3("material.ambient", material.Ambient.r, material.Ambient.g, material.Ambient.b);
             shader.setVec3("material.diffuse", material.Diffuse.r, material.Diffuse.g, material.Diffuse.b);
             shader.setVec3("material.specular", material.Specular.r, material.Specular.g, material.Specular.b);

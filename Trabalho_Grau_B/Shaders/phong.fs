@@ -6,8 +6,7 @@ in vec3 fragPos;
 
 out vec4 fragColor;
 
-//Propriedades da superficie
-uniform float ka, kd, ks, q;
+
 
 //Propriedades da fonte de luz
 uniform vec3 lightPos, lightColor;

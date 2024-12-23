@@ -1,8 +1,5 @@
 #include "SceneManager.h"
-#include "CurveManager.h"
-#include "Triangle.h"
 #include <filesystem>
-#include "rayCastTest.h"
 
 
 GLuint WIDTH, HEIGHT;
@@ -18,17 +15,9 @@ float lastX = 0, lastY = 0;
 float deltaTime = 0.0f; // time between current frame and last frame
 float lastFrame = 0.0f;
 
-//object to render
-static int selected_obj = 0;
 
-//curves manager
-CurveManager curveMan;
-Triangle triangle;
-int curve_position = 0;
-
-//render mode
-bool render_models = true;
-
+// lighting
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 SceneManager::SceneManager()
 {
@@ -56,7 +45,7 @@ void SceneManager::initializeGraphics()
 	this->window = glfwCreateWindow(WIDTH, HEIGHT, "Camera", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 	// Fazendo o registro da função de callback para a janela GLFW
 	glfwSetKeyCallback(window, key_callback);
@@ -67,6 +56,7 @@ void SceneManager::initializeGraphics()
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
 	}
+
 	stbi_set_flip_vertically_on_load(true);
 
 	// Obtendo as informações de versão
@@ -74,11 +64,6 @@ void SceneManager::initializeGraphics()
 	const GLubyte* version = glGetString(GL_VERSION); /* version as a string */
 	cout << "Renderer: " << renderer << endl;
 	cout << "OpenGL version supported " << version << endl;
-
-	// Compilando e buildando o programa de shader
-	addShader("Shaders/phong.vs", "Shaders/phong.fs");
-	addShader("Shaders/curve.vs", "Shaders/curve.fs");
-	addShader("Shaders/triangle.vs", "Shaders/curve.fs");
 	
 	setupScene();
 }
@@ -87,21 +72,16 @@ void SceneManager::setupScene()
 {
 	glEnable(GL_DEPTH_TEST);
 
+	// Compilando e buildando o programa de shader
+	addShader("Shaders/lighting.vs", "Shaders/lighting.fs");
+	addShader("Shaders/cube_light.vs", "Shaders/cube_light.fs");
 	// Gerando um buffer simples, com a geometria de um triângulo
 	loadObjs();
 
-	Shader shader = *shaders[0];
-	shader.Use();
-	//Propriedades da fonte de luz
-	shader.setVec3("lightPos",-2.0, 10.0, 3.0); 
-	shader.setVec3("lightColor",1.0, 1.0, 1.0);
-	
 	// Definindo as dimensões da viewport com as mesmas dimensões da janela da aplicação
 	int width, height;
 	glfwGetFramebufferSize(this->window, &width, &height);
 	glViewport(0, 0, width, height);
-	curveMan.Initialize();
-	triangle.Initialize();
 }
 
 void SceneManager::render()
@@ -112,146 +92,88 @@ void SceneManager::render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLineWidth(10);
 
-	if(render_models)
+	Shader lighting_shader = *shaders[0];
+	lighting_shader.Use();
+    lighting_shader.setVec4("Color", glm::vec4(1.f, 0.f, 0.f, 1.0));
+
+	for (int i = 0; i < models.size(); i++)
 	{
-		Shader shader = *shaders[0];
+		Model obj = models[i];
 
-		for(int i = 0; i < models.size(); i++)
-		{	
-			Model obj = models[i];
+		glm::mat4 model = glm::mat4(1);
 
-			glm::mat4 model = glm::mat4(1);
-
-			filesystem::path p(obj.directory);
-			cout << p.stem() << endl;
-			if(p.stem() == "Naves")
-				model = glm::translate(model, glm::vec3(0.5f, 0.0f, -8.0f));
-			else if (p.stem() == "obj")
-			{
-				model = glm::translate(model, glm::vec3(-2.5f, 0.0f, -3.0f));
-				model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			}
-			else if (p.stem() == "Planetas")
-				model = glm::translate(model, glm::vec3(-2.0f, 0.0f, -3.0f));
-			else if (p.stem() == "Suzannes")
-				model = glm::translate(model, glm::vec3(-1.1f, 0.0f, -3.0f));
-			else if (p.stem() == "1963 Volkswagen Beetle")
-			{
-				model = glm::translate(model, glm::vec3(1.9f, -0.3f, 3.0f));
-				model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			}
-
-			model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
-			if (rotateX)
-			{
-				model = glm::rotate(model, lastFrame, glm::vec3(1.0f, 0.0f, 0.0f));
-			}
-			else if (rotateY)
-			{
-				model = glm::rotate(model, lastFrame, glm::vec3(0.0f, 1.0f, 0.0f));
-			}
-			else if (rotateZ)
-			{
-				model = glm::rotate(model, lastFrame, glm::vec3(0.0f, 0.0f, 1.0f));
-			}
-
-			shader.setMat4("model", glm::value_ptr(model));
-
-			obj.Draw(shader);
+		filesystem::path p(obj.directory);
+		cout << p.stem() << endl;
+		if (p.stem() == "Naves")
+			model = glm::translate(model, glm::vec3(0.5f, 0.0f, -8.0f));
+		else if (p.stem() == "obj")
+		{
+			model = glm::translate(model, glm::vec3(-2.5f, 0.0f, -3.0f));
+			model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		}
+		else if (p.stem() == "Suzannes")
+			model = glm::translate(model, glm::vec3(-1.1f, 0.0f, -3.0f));
+
+		model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+		if (rotateX)
+		{
+			model = glm::rotate(model, lastFrame, glm::vec3(1.0f, 0.0f, 0.0f));
+		}
+		else if (rotateY)
+		{
+			model = glm::rotate(model, lastFrame, glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		else if (rotateZ)
+		{
+			model = glm::rotate(model, lastFrame, glm::vec3(0.0f, 0.0f, 1.0f));
+		}
+
+		lighting_shader.setMat4("model", glm::value_ptr(model));
+
+		obj.Draw(lighting_shader);
 	}
-	else
-	{
-		curveMan.Draw(*shaders[1]);
-		triangle.Draw(*shaders[2]);
-	}
+
+	Shader cube_shader = *shaders[1];
+	cube_shader.Use();
+	glm::mat4 model = glm::mat4(1);
+	model = glm::translate(model, lightPos);
+	model = glm::scale(model, glm::vec3(0.3f));
+	cube_shader.setMat4("model", glm::value_ptr(model));
+	Model obj = models[models.size() - 1];
+	obj.Draw(cube_shader);
 }
 
 void SceneManager::update(GLFWwindow *window)
 {
 	processInput(window);
 
-	if(!render_models)
-	{
-		Shader shader = *shaders[2];
+	Shader lighting_shader = *shaders[0];
+	lighting_shader.Use();
+	// light properties
+	glm::vec3 lightColor;
+	lightColor.x = static_cast<float>(sin(lastFrame * 2.0));
+	lightColor.y = static_cast<float>(sin(lastFrame * 0.7));
+	lightColor.z = static_cast<float>(sin(lastFrame * 1.3));
+	glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);	 // decrease the influence
+	glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // low influence
+	lighting_shader.setVec3("light.ambient", ambientColor);
+	lighting_shader.setVec3("light.diffuse", diffuseColor);
+	lighting_shader.setVec3("light.specular", glm::vec3(1.0f));
 
-		glm::vec3 position = curveMan.GetCurvePosition(curve_position);
-		// Incrementando o índice do frame apenas quando fechar a taxa de FPS desejada
-		float angle = 0.0;
-		curve_position = (curve_position + 1) % curveMan.GetCurveSize(); // incrementando ciclicamente o indice do Frame
-		glm::vec3 nextPos = curveMan.GetCurvePosition(curve_position);
-		glm::vec3 dir = glm::normalize(nextPos - position);
-		angle = atan2(dir.y, dir.x) + glm::radians(-90.0f);
-
-		glm::vec3 dimensions = glm::vec3(0.2, 0.2, 1.0);
-		glm::vec3 axis = glm::vec3(0.0, 0.0, 1.0);
-		triangle.Crawl(shader, position, dimensions, angle, axis, (GLfloat)glfwGetTime());
-		return;
-	}
-
-	Shader shader = *shaders[0];
 	// matrix de projeção
 	this->projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
-	shader.setMat4("projection", glm::value_ptr(projection));
+	lighting_shader.setMat4("projection", glm::value_ptr(projection));
 
 	// propriedades da camera
 	//  Matrix de view
 	this->view = camera.GetViewMatrix();
-	shader.setMat4("view", glm::value_ptr(view));
+	lighting_shader.setMat4("view", glm::value_ptr(view));
 
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)){
-			
-			glm::vec3 ray_origin;
-			glm::vec3 ray_direction;
-			ScreenPosToWorldRay(
-				1024/2, 768/2,
-				1024, 768, 
-				view, 
-				projection, 
-				ray_origin, 
-				ray_direction
-			);	
-			
-			//ray_direction = ray_direction*20.0f;
-
-			message = "background";
-
-			// Test each each Oriented Bounding Box (OBB).
-			// A physics engine can be much smarter than this, 
-			// because it already has some spatial partitionning structure, 
-			// like Binary Space Partitionning Tree (BSP-Tree),
-			// Bounding Volume Hierarchy (BVH) or other.
-			for(int i=0; i<100; i++){
-
-				float intersection_distance; // Output of TestRayOBBIntersection()
-				glm::vec3 aabb_min(-1.0f, -1.0f, -1.0f);
-				glm::vec3 aabb_max( 1.0f,  1.0f,  1.0f);
-
-				// The ModelMatrix transforms :
-				// - the mesh to its desired position and orientation
-				// - but also the AABB (defined with aabb_min and aabb_max) into an OBB
-				glm::mat4 RotationMatrix = glm::toMat4(orientations[i]);
-				glm::mat4 TranslationMatrix = translate(mat4(), positions[i]);
-				glm::mat4 ModelMatrix = TranslationMatrix * RotationMatrix;
-
-
-				if ( TestRayOBBIntersection(
-					ray_origin, 
-					ray_direction, 
-					aabb_min, 
-					aabb_max,
-					ModelMatrix,
-					intersection_distance)
-				){
-					std::ostringstream oss;
-					oss << "mesh " << i;
-					message = oss.str();
-					break;
-				}
-			}
-
-
-		}
+	Shader cube_shader = *shaders[1];
+	cube_shader.Use();
+    cube_shader.setVec4("Color", glm::vec4(lightColor, 1.0));
+	cube_shader.setMat4("projection", glm::value_ptr(projection));
+	cube_shader.setMat4("view", glm::value_ptr(view));
 
 	return;
 }
@@ -327,10 +249,6 @@ void SceneManager::key_callback(GLFWwindow* window, int key, int scancode, int a
 			rotateZ = !rotateZ;
 		}
 		
-		if(key == GLFW_KEY_C)
-		{
-			render_models = !render_models;
-		}
 	}
 }
 
@@ -359,8 +277,6 @@ void SceneManager::framebuffer_size_callback(GLFWwindow* window, int width, int 
 
 void SceneManager::mouse_callback(GLFWwindow *window, double xposIn, double yposIn)
 {
-	
-
 	float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
 
@@ -394,20 +310,17 @@ void SceneManager::scroll_callback(GLFWwindow* window, double xoffset, double yo
 
 void SceneManager::loadObjs()
 {
-	//cube
-
 	models.push_back(Model(std::filesystem::path("../assets/Naves/LightCruiser05.obj")));
 	cout << "load cruiser"<< endl;
 
 	models.push_back(Model(std::filesystem::path("../assets/aratwearingabackpack/obj/model.obj")));
 	cout << "load rato"<< endl;
 
-	models.push_back(Model(std::filesystem::path("../assets/Planetas/planeta.obj")));
-	cout << "load planeta"<< endl;
-
 	models.push_back(Model(std::filesystem::path("../assets/Suzannes/SuzanneHigh.obj")));
 	cout << "load SuzanneHigh"<< endl;
-
-	models.push_back(Model(std::filesystem::path("../assets/Carro/1963 Volkswagen Beetle/1963 Volkswagen Beetle.obj")));
-	cout << "load Carro"<< endl;
+	
+	models.push_back(Model(std::filesystem::path("../assets/cube.obj")));
+	cout << "load cube"<< endl;
+	// models.push_back(Model(std::filesystem::path("../assets/Carro/1963 Volkswagen Beetle/1963 Volkswagen Beetle.obj")));
+	// cout << "load Carro"<< endl;
 }

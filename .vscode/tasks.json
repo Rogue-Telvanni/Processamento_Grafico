@@ -16,7 +16,7 @@
                 "-I${workspaceFolder}/Common/include", //Common
                 //"-L${workspaceFolder}/dependencies/Assimp/lib",
                 //source
-                "${workspaceFolder}/Trabalho_Grau_B/*.cpp",
+                "${workspaceFolder}/Brinquedo/*.cpp",
                 //"${workspaceFolder}/Ray_2_Weeks/*.cpp",
                 //extra
                 "${workspaceFolder}/Common/src/*.cpp",
