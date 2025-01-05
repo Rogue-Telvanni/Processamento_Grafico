@@ -1,5 +1,6 @@
 #include "SceneManager.h"
 #include <filesystem>
+#include "cube.h"
 
 
 GLuint WIDTH, HEIGHT;
@@ -18,6 +19,20 @@ float lastFrame = 0.0f;
 
 // lighting
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
+// Cube
+Cube cube;
+glm::vec3 cubePositions[] = {
+	glm::vec3(0.0f, 0.0f, 0.0f),
+	glm::vec3(2.0f, 5.0f, -15.0f),
+	glm::vec3(-1.5f, -2.2f, -2.5f),
+	glm::vec3(-3.8f, -2.0f, -12.3f),
+	glm::vec3(2.4f, -0.4f, -3.5f),
+	glm::vec3(-1.7f, 3.0f, -7.5f),
+	glm::vec3(1.3f, -2.0f, -2.5f),
+	glm::vec3(1.5f, 2.0f, -2.5f),
+	glm::vec3(1.5f, 0.2f, -1.5f),
+	glm::vec3(-1.3f, 1.0f, -1.5f)};
 
 SceneManager::SceneManager()
 {
@@ -45,7 +60,7 @@ void SceneManager::initializeGraphics()
 	this->window = glfwCreateWindow(WIDTH, HEIGHT, "Camera", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// Fazendo o registro da função de callback para a janela GLFW
 	glfwSetKeyCallback(window, key_callback);
@@ -57,7 +72,7 @@ void SceneManager::initializeGraphics()
 		std::cout << "Failed to initialize GLAD" << std::endl;
 	}
 
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(false);
 
 	// Obtendo as informações de versão
 	const GLubyte* renderer = glGetString(GL_RENDERER); /* get renderer string */
@@ -82,28 +97,41 @@ void SceneManager::setupScene()
 	int width, height;
 	glfwGetFramebufferSize(this->window, &width, &height);
 	glViewport(0, 0, width, height);
+	cube = PrepareCube();
 }
 
 void SceneManager::render()
 {
 	// Checa se houveram eventos de input (key pressed, mouse moved etc.) e chama as funções de callback correspondentes
 	// Limpa o buffer de cor
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // cor de fundo
+	glClearColor(0.235f, 0.329f, 0.0451f, 1.0f); // cor de fundo
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLineWidth(10);
 
 	Shader lighting_shader = *shaders[0];
 	lighting_shader.Use();
-    lighting_shader.setVec4("Color", glm::vec4(1.f, 0.f, 0.f, 1.0));
+	glm::vec3 lightColor(1.0f);
 
-	for (int i = 0; i < models.size(); i++)
+	for (int i = 0; i < models.size() - 1; i++)
 	{
+		glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);	 // decrease the influence
+		glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // low influence
+		lighting_shader.setVec3("light.ambient", ambientColor);
+		lighting_shader.setVec3("light.diffuse", diffuseColor);
+		lighting_shader.setVec3("light.specular", glm::vec3(1.0f));
+		// lighting_shader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
+		lighting_shader.setVec3("light.position", lightPos);
+		lighting_shader.setFloat("light.constant", 1.0f);
+		lighting_shader.setFloat("light.linear", 0.09f);
+		lighting_shader.setFloat("light.quadratic", 0.032f);
+		lighting_shader.setVec3("cameraPos", camera.Position);
+
 		Model obj = models[i];
 
 		glm::mat4 model = glm::mat4(1);
 
 		filesystem::path p(obj.directory);
-		cout << p.stem() << endl;
+		// cout << p.stem() << endl;
 		if (p.stem() == "Naves")
 			model = glm::translate(model, glm::vec3(0.5f, 0.0f, -8.0f));
 		else if (p.stem() == "obj")
@@ -133,8 +161,23 @@ void SceneManager::render()
 		obj.Draw(lighting_shader);
 	}
 
+	model = glm::mat4(1.0f);
+	lighting_shader.setMat4("model", glm::value_ptr(model));
+
+
+	for (unsigned int i = 0; i < 10; i++)
+	{
+		// calculate the model matrix for each object and pass it to shader before drawing
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, cubePositions[i]);
+		float angle = 20.0f * i;
+		model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+		DrawCube(lighting_shader, cube, lightPos, camera.Position, model);
+	}
+
 	Shader cube_shader = *shaders[1];
 	cube_shader.Use();
+    cube_shader.setVec4("Color", glm::vec4(lightColor, 1.0));
 	glm::mat4 model = glm::mat4(1);
 	model = glm::translate(model, lightPos);
 	model = glm::scale(model, glm::vec3(0.3f));
@@ -150,15 +193,7 @@ void SceneManager::update(GLFWwindow *window)
 	Shader lighting_shader = *shaders[0];
 	lighting_shader.Use();
 	// light properties
-	glm::vec3 lightColor;
-	lightColor.x = static_cast<float>(sin(lastFrame * 2.0));
-	lightColor.y = static_cast<float>(sin(lastFrame * 0.7));
-	lightColor.z = static_cast<float>(sin(lastFrame * 1.3));
-	glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);	 // decrease the influence
-	glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // low influence
-	lighting_shader.setVec3("light.ambient", ambientColor);
-	lighting_shader.setVec3("light.diffuse", diffuseColor);
-	lighting_shader.setVec3("light.specular", glm::vec3(1.0f));
+	
 
 	// matrix de projeção
 	this->projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
@@ -171,7 +206,6 @@ void SceneManager::update(GLFWwindow *window)
 
 	Shader cube_shader = *shaders[1];
 	cube_shader.Use();
-    cube_shader.setVec4("Color", glm::vec4(lightColor, 1.0));
 	cube_shader.setMat4("projection", glm::value_ptr(projection));
 	cube_shader.setMat4("view", glm::value_ptr(view));
 
@@ -319,8 +353,9 @@ void SceneManager::loadObjs()
 	models.push_back(Model(std::filesystem::path("../assets/Suzannes/SuzanneHigh.obj")));
 	cout << "load SuzanneHigh"<< endl;
 	
-	models.push_back(Model(std::filesystem::path("../assets/cube.obj")));
-	cout << "load cube"<< endl;
 	// models.push_back(Model(std::filesystem::path("../assets/Carro/1963 Volkswagen Beetle/1963 Volkswagen Beetle.obj")));
 	// cout << "load Carro"<< endl;
+
+	models.push_back(Model(std::filesystem::path("../assets/cube.obj")));
+	cout << "load cube"<< endl;
 }

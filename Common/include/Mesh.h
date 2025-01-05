@@ -74,18 +74,18 @@ public:
             // retrieve texture number (the N in diffuse_textureN)
             string number;
             string name = textures[i].type;
-            if(name == "texture_diffuse")
+            if(name == "texture_diffuse_")
                 number = std::to_string(diffuseNr++);
-            else if(name == "texture_specular")
+            else if(name == "texture_specular_")
                 number = std::to_string(specularNr++); // transfer unsigned int to string
-            else if(name == "texture_normal")
+            else if(name == "texture_normal_")
                 number = std::to_string(normalNr++); // transfer unsigned int to string
-             else if(name == "texture_height")
+             else if(name == "texture_height_")
                 number = std::to_string(heightNr++); // transfer unsigned int to string
 
             // now set the sampler to the correct texture unit
-            //shader.setInt((name + number).c_str(), i);
-            glUniform1i(glGetUniformLocation(shader.ID, (name + number).c_str()), i);
+            shader.setInt(("material." + name + number).c_str(), i);
+            //glUniform1i(glGetUniformLocation(shader.ID, (name + number).c_str()), i);
             // and finally bind the texture
             glBindTexture(GL_TEXTURE_2D, textures[i].id);
         }

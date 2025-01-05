@@ -1,66 +1,60 @@
-#version 430
 
-//structs
 
-// dados do material
-struct Material{
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
+#version 450 core
+out vec4 FragColor;
+
+struct Material {
+    sampler2D texture_diffuse_1;
+    sampler2D texture_specular_1;    
     float shininess;
-};
+}; 
 
-// dados da luz
-struct Light{
-    vec3 position;
+struct Light {
+    vec3 position;  
+  
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
+	
+    float constant;
+    float linear;
+    float quadratic;
 };
 
-//propriedaes do vertex shader
-in vec2 TexCoord;
-in vec3 ScaledNormal;
-in vec3 FragPos;
-
-// cor final
-out vec4 frag_color;
-
-//Propriedades da câmera
-uniform vec3 cameraPos;
-uniform bool useColor;
-
-// materiais e luz
+in vec3 Frag_Pos;  
+in vec3 Scaled_Normal;  
+in vec2 Text_Coord;
+  
+uniform vec3 viewPos;
 uniform Material material;
 uniform Light light;
-
-//Buffer da textura
-uniform sampler2D texture_diffuse1;
-uniform vec3 Color;
 
 void main()
 {
     // ambient
-    vec3 ambient = light.ambient * material.ambient;
+    vec3 ambient = light.ambient * texture(material.texture_diffuse_1, Text_Coord).rgb;
   	
     // diffuse 
-    vec3 normal = normalize(ScaledNormal);
-    vec3 lightDir = normalize(light.position - FragPos);
+    vec3 normal = normalize(Scaled_Normal);
+    vec3 lightDir = normalize(light.position - Frag_Pos);
     float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = light.diffuse * (diff * material.diffuse);
+    vec3 diffuse = light.diffuse * diff * texture(material.texture_diffuse_1, Text_Coord).rgb;  
     
     // specular
-    vec3 cameraDir = normalize(cameraPos - FragPos);
+    vec3 viewDir = normalize(viewPos - Frag_Pos);
     vec3 reflectDir = reflect(-lightDir, normal);  
-    float spec = pow(max(dot(cameraDir, reflectDir), 0.0), material.shininess);
-    vec3 specular = light.specular * (spec * material.specular);  
-        
-    vec4 texColor;
-    if(useColor)
-        texColor = vec4(Color, 1.0);
-    else
-        texColor = texture(texture_diffuse1,TexCoord);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 specular = light.specular * spec * texture(material.texture_specular_1, Text_Coord).rgb;  
+    
+    // attenuation
+    float distance    = length(light.position - Frag_Pos);
+    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
 
-    vec3 result = (ambient + diffuse + specular) * vec3(texColor) ;
-    frag_color = vec4(result,1.0);
-}
+    ambient  *= attenuation;  
+    diffuse   *= attenuation;
+    specular *= attenuation;   
+        
+    vec3 result = ambient + diffuse + specular;
+    FragColor = vec4(result, 1.0);
+} 
+

@@ -46,10 +46,10 @@ public:
             const Material& material = materials[mesh.materialIndex];
 
             shader.Use();
-            if(mesh.textures.size() > 0)
-                shader.setBool("useColor", false);
-            else
-                shader.setBool("useColor", true);
+            // if(mesh.textures.size() > 0)
+            //     shader.setBool("useColor", false);
+            // else
+            //     shader.setBool("useColor", true);
 
             shader.setVec3("material.ambient", material.Ambient.r, material.Ambient.g, material.Ambient.b);
             shader.setVec3("material.diffuse", material.Diffuse.r, material.Diffuse.g, material.Diffuse.b);

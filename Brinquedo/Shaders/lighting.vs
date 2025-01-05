@@ -9,15 +9,15 @@ uniform mat4 projection;
 uniform mat4 view;
 
 //Variáveis que irão para o fragment shader
-out vec2 TexCoord;
-out vec3 ScaledNormal;
-out vec3 FragPos;
+out vec2 Text_Coord;
+out vec3 Scaled_Normal;
+out vec3 Frag_Pos;
 
 void main()
 {
 	//...pode ter mais linhas de código aqui!
-	gl_Position = projection * view * model * vec4(position, 1.0);
-    TexCoord = vec2(texc.s, 1 - texc.t);
-    FragPos = vec3(model * vec4(position, 1.0));
-    ScaledNormal = vec3(model * vec4(normal, 1.0));
+    Frag_Pos = vec3(model * vec4(position, 1.0));
+    Scaled_Normal = mat3(transpose(inverse(model))) * normal;  
+    Text_Coord = texc;
+    gl_Position = projection * view * vec4(Frag_Pos, 1.0);
 }
