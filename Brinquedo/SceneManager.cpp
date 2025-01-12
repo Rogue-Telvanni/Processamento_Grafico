@@ -88,7 +88,7 @@ void SceneManager::setupScene()
 	glEnable(GL_DEPTH_TEST);
 
 	// Compilando e buildando o programa de shader
-	addShader("Shaders/lighting.vs", "Shaders/lighting.fs");
+	addShader("Shaders/lighting.vs", "Shaders/flashlight.fs");
 	addShader("Shaders/cube_light.vs", "Shaders/cube_light.fs");
 	// Gerando um buffer simples, com a geometria de um triângulo
 	loadObjs();
@@ -110,22 +110,9 @@ void SceneManager::render()
 
 	Shader lighting_shader = *shaders[0];
 	lighting_shader.Use();
-	glm::vec3 lightColor(1.0f);
 
 	for (int i = 0; i < models.size() - 1; i++)
 	{
-		glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);	 // decrease the influence
-		glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // low influence
-		lighting_shader.setVec3("light.ambient", ambientColor);
-		lighting_shader.setVec3("light.diffuse", diffuseColor);
-		lighting_shader.setVec3("light.specular", glm::vec3(1.0f));
-		// lighting_shader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
-		lighting_shader.setVec3("light.position", lightPos);
-		lighting_shader.setFloat("light.constant", 1.0f);
-		lighting_shader.setFloat("light.linear", 0.09f);
-		lighting_shader.setFloat("light.quadratic", 0.032f);
-		lighting_shader.setVec3("cameraPos", camera.Position);
-
 		Model obj = models[i];
 
 		glm::mat4 model = glm::mat4(1);
@@ -177,7 +164,6 @@ void SceneManager::render()
 
 	Shader cube_shader = *shaders[1];
 	cube_shader.Use();
-    cube_shader.setVec4("Color", glm::vec4(lightColor, 1.0));
 	glm::mat4 model = glm::mat4(1);
 	model = glm::translate(model, lightPos);
 	model = glm::scale(model, glm::vec3(0.3f));
@@ -193,7 +179,22 @@ void SceneManager::update(GLFWwindow *window)
 	Shader lighting_shader = *shaders[0];
 	lighting_shader.Use();
 	// light properties
-	
+	glm::vec3 lightColor(1.0f);
+	glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);	 // decrease the influence
+	glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // low influence
+	lighting_shader.setVec3("light.ambient", ambientColor);
+	lighting_shader.setVec3("light.diffuse", diffuseColor);
+	lighting_shader.setVec3("light.specular", glm::vec3(1.0f));
+	// lighting_shader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
+	//lighting_shader.setVec3("light.position", lightPos);
+	lighting_shader.setVec3("light.position", camera.Position);
+	lighting_shader.setVec3("light.direction", camera.Front);
+	lighting_shader.setFloat("light.cutOff",   glm::cos(glm::radians(12.5f)));
+	lighting_shader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
+	lighting_shader.setFloat("light.constant", 1.0f);
+	lighting_shader.setFloat("light.linear", 0.09f);
+	lighting_shader.setFloat("light.quadratic", 0.032f);
+	lighting_shader.setVec3("viewPos", camera.Position);
 
 	// matrix de projeção
 	this->projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
@@ -206,6 +207,7 @@ void SceneManager::update(GLFWwindow *window)
 
 	Shader cube_shader = *shaders[1];
 	cube_shader.Use();
+    cube_shader.setVec4("Color", glm::vec4(lightColor, 1.0));
 	cube_shader.setMat4("projection", glm::value_ptr(projection));
 	cube_shader.setMat4("view", glm::value_ptr(view));
 
