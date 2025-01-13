@@ -35,9 +35,7 @@ uniform Light light;
 void main()
 {
     // check if lighting is inside the spotlight cone
-  
     vec3 lightDir = normalize(light.position - Frag_Pos);
-
     // ambient
     vec3 ambient = light.ambient * texture(material.texture_diffuse_1, Text_Coord).rgb;
     

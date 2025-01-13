@@ -19,6 +19,13 @@ float lastFrame = 0.0f;
 
 // lighting
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+glm::vec4 BACK_GL_COLOR(0.235f, 0.329f, 0.0451f, 1.0f);
+
+glm::vec3 pointLightPositions[] = {
+	glm::vec3(0.7f, 0.2f, 2.0f),
+	glm::vec3(2.3f, -3.3f, -4.0f),
+	glm::vec3(-4.0f, 2.0f, -12.0f),
+	glm::vec3(0.0f, 0.0f, -3.0f)};
 
 // Cube
 Cube cube;
@@ -57,7 +64,7 @@ void SceneManager::initializeGraphics()
 	glfwInit();
 
 	// Criação da janela GLFW
-	this->window = glfwCreateWindow(WIDTH, HEIGHT, "Camera", nullptr, nullptr);
+	this->window = glfwCreateWindow(WIDTH, HEIGHT, "multi light opengl", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -88,7 +95,7 @@ void SceneManager::setupScene()
 	glEnable(GL_DEPTH_TEST);
 
 	// Compilando e buildando o programa de shader
-	addShader("Shaders/lighting.vs", "Shaders/flashlight.fs");
+	addShader("Shaders/lighting.vs", "Shaders/multi_light.fs");
 	addShader("Shaders/cube_light.vs", "Shaders/cube_light.fs");
 	// Gerando um buffer simples, com a geometria de um triângulo
 	loadObjs();
@@ -104,7 +111,7 @@ void SceneManager::render()
 {
 	// Checa se houveram eventos de input (key pressed, mouse moved etc.) e chama as funções de callback correspondentes
 	// Limpa o buffer de cor
-	glClearColor(0.235f, 0.329f, 0.0451f, 1.0f); // cor de fundo
+	glClearColor(BACK_GL_COLOR.r, BACK_GL_COLOR.g, BACK_GL_COLOR.b, BACK_GL_COLOR.a); // cor de fundo
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLineWidth(10);
 
@@ -118,7 +125,6 @@ void SceneManager::render()
 		glm::mat4 model = glm::mat4(1);
 
 		filesystem::path p(obj.directory);
-		// cout << p.stem() << endl;
 		if (p.stem() == "Naves")
 			model = glm::translate(model, glm::vec3(0.5f, 0.0f, -8.0f));
 		else if (p.stem() == "obj")
@@ -164,12 +170,16 @@ void SceneManager::render()
 
 	Shader cube_shader = *shaders[1];
 	cube_shader.Use();
-	glm::mat4 model = glm::mat4(1);
-	model = glm::translate(model, lightPos);
-	model = glm::scale(model, glm::vec3(0.3f));
-	cube_shader.setMat4("model", glm::value_ptr(model));
-	Model obj = models[models.size() - 1];
-	obj.Draw(cube_shader);
+
+	for(int i = 0; i < 4; i++)
+	{
+		glm::mat4 model = glm::mat4(1);
+		model = glm::translate(model, pointLightPositions[i]);
+		model = glm::scale(model, glm::vec3(0.3f));
+		cube_shader.setMat4("model", glm::value_ptr(model));
+		Model obj = models[models.size() - 1];
+		obj.Draw(cube_shader);
+	}
 }
 
 void SceneManager::update(GLFWwindow *window)
@@ -178,23 +188,55 @@ void SceneManager::update(GLFWwindow *window)
 
 	Shader lighting_shader = *shaders[0];
 	lighting_shader.Use();
-	// light properties
+
 	glm::vec3 lightColor(1.0f);
-	glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);	 // decrease the influence
-	glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // low influence
-	lighting_shader.setVec3("light.ambient", ambientColor);
-	lighting_shader.setVec3("light.diffuse", diffuseColor);
-	lighting_shader.setVec3("light.specular", glm::vec3(1.0f));
-	// lighting_shader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
-	//lighting_shader.setVec3("light.position", lightPos);
-	lighting_shader.setVec3("light.position", camera.Position);
-	lighting_shader.setVec3("light.direction", camera.Front);
-	lighting_shader.setFloat("light.cutOff",   glm::cos(glm::radians(12.5f)));
-	lighting_shader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
-	lighting_shader.setFloat("light.constant", 1.0f);
-	lighting_shader.setFloat("light.linear", 0.09f);
-	lighting_shader.setFloat("light.quadratic", 0.032f);
-	lighting_shader.setVec3("viewPos", camera.Position);
+
+	// directional light
+	lighting_shader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+	lighting_shader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+	lighting_shader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+	lighting_shader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+
+	// point light
+	for(int i = 0; i < 4; i++)
+	{
+		string p_light = ("pointLights[" + std::to_string(i) + "]").c_str();
+		lighting_shader.setVec3(p_light + ".position", pointLightPositions[i]);
+		lighting_shader.setVec3(p_light + ".ambient", 0.05f, 0.05f, 0.05f);
+		lighting_shader.setVec3(p_light + ".diffuse", 0.8f, 0.8f, 0.8f);
+		lighting_shader.setVec3(p_light + ".specular", 1.0f, 1.0f, 1.0f);
+		lighting_shader.setFloat(p_light + ".constant", 1.0f);
+		lighting_shader.setFloat(p_light + ".linear", 0.09f);
+		lighting_shader.setFloat(p_light + ".quadratic", 0.032f);
+	}
+
+	// spotLight
+	lighting_shader.setVec3("spotLight.position", camera.Position);
+	lighting_shader.setVec3("spotLight.direction", camera.Front);
+	lighting_shader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+	lighting_shader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+	lighting_shader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+	lighting_shader.setFloat("spotLight.constant", 1.0f);
+	lighting_shader.setFloat("spotLight.linear", 0.09f);
+	lighting_shader.setFloat("spotLight.quadratic", 0.032f);
+	lighting_shader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+	lighting_shader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+
+	// glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);	 // decrease the influence
+	// glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // low influence
+	// lighting_shader.setVec3("light.ambient", ambientColor);
+	// lighting_shader.setVec3("light.diffuse", diffuseColor);
+	// lighting_shader.setVec3("light.specular", glm::vec3(1.0f));
+	// // lighting_shader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
+	// //lighting_shader.setVec3("light.position", lightPos);
+	// lighting_shader.setVec3("light.position", camera.Position);
+	// lighting_shader.setVec3("light.direction", camera.Front);
+	// lighting_shader.setFloat("light.cutOff",   glm::cos(glm::radians(12.5f)));
+	// lighting_shader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
+	// lighting_shader.setFloat("light.constant", 1.0f);
+	// lighting_shader.setFloat("light.linear", 0.09f);
+	// lighting_shader.setFloat("light.quadratic", 0.032f);
+	// lighting_shader.setVec3("viewPos", camera.Position);
 
 	// matrix de projeção
 	this->projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
